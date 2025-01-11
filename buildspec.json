@@ -39,13 +39,7 @@
     "name": "pulse-obs",
     "displayName": "PulseOBS Plugin",
     "version": "1.0.0",
-    "author": [
-        "Maciej Rytlewski", 
-        "Zihan Pan", 
-        "Elizabeth Chan", 
-        "Charlie Campbell", 
-        "Ge Gao", 
-        "Andras Tremmel"],
+    "author": "Maciej Rytlewski",
     "email": "maciekrytlewski@gmail.com",
     "website": "https://github.com/Maciek03102003/PulseOBS",
     "uuids": {
