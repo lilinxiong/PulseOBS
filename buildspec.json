@@ -36,13 +36,20 @@
             "bundleId": "com.example.obs-plugintemplate"
         }
     },
-    "name": "obs-plugintemplate",
-    "displayName": "OBS Plugin Template",
+    "name": "pulse-obs",
+    "displayName": "PulseOBS Plugin",
     "version": "1.0.0",
-    "author": "Your Name Here",
-    "website": "https://example.com",
-    "email": "me@example.com",
+    "author": [
+        "Maciej Rytlewski", 
+        "Zihan Pan", 
+        "Elizabeth Chan", 
+        "Charlie Campbell", 
+        "Ge Gao", 
+        "Andras Tremmel"],
+    "email": "maciekrytlewski@gmail.com",
     "uuids": {
+        "macosPackage": "9a3a1d34-3071-408a-a5f3-e1b30bcbe8f8",
+        "macosInstaller": "b96208ca-a6f0-4cd3-8b1d-b823b9dc78ea",
         "windowsApp": "00000000-0000-0000-0000-000000000000"
     }
 }
