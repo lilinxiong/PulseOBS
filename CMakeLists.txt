@@ -5,11 +5,11 @@ project(PulseOBS)
 set(CMAKE_CXX_STANDARD 11)
 
 # Include directories
-include_directories(algorithm plugin)
+include_directories(src/algorithm src/plugin)
 
 # Add the algorithm library
-add_library(algorithm_lib algorithm/HeartRateAlgorithm.cpp)
+add_library(algorithm_lib src/algorithm/HeartRateAlgorithm.cpp)
 
 # Add the combined executable
-add_executable(PulseOBS plugin/OBSPlugin.cpp)
+add_executable(PulseOBS src/plugin/OBSPlugin.cpp)
 target_link_libraries(PulseOBS algorithm_lib)
