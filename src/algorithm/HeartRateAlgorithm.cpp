@@ -8,6 +8,8 @@
 #include <cmath>
 #include <complex>
 #include <fftw3.h>
+#include <algorithm>
+
 
 using namespace std;
 using namespace Eigen;
@@ -26,11 +28,11 @@ class MovingAvg {
         
 
         vector<vector<uint8_t>> moving_average(
-            int width,
-            int height,
             const vector<vector<uint8_t>>& yuv,
             int n = 3
         ) {
+            size_t width = yuv[0].size();
+            size_t height = yuv.size();
             // Convert the input vector to an Eigen matrix
             MatrixXd input(height, width);
             for (int i = 0; i < height; ++i) {
@@ -47,7 +49,7 @@ class MovingAvg {
                 for (int j = 0; j < width; ++j) {
                     // Calculate the row range for the moving average
                     int start_row = max(0, i - n / 2);
-                    int end_row = min(height, i + n / 2 + 1);
+                    int end_row = min(static_cast<int>(height), i + n / 2 + 1);
 
                     // Calculate the moving average
                     output(i, j) = input.block(start_row, j, end_row - start_row, 1).mean();
@@ -95,8 +97,8 @@ class MovingAvg {
             }
 
             // Get frame width, height, and format
-            int width = frame->width;
-            int height = frame->height;
+            size_t width = frame->width;
+            size_t height = frame->height;
             video_format format = frame->format;
 
             // Container for YUV values
@@ -147,19 +149,19 @@ class MovingAvg {
         }
 
         // Function to magnify color
-        std::vector<double> magnify_colour_ma(vector<vector<uint8_t>>& yuv, double delta = 50, int n_bg_ma = 60, int n_smooth_ma = 3) {
-            int width = yuv[0].size();
-            int height = yuv.size();
+        std::vector<vector<uint8_t>> magnify_colour_ma(const vector<vector<uint8_t>>& yuv, double delta = 50, int n_bg_ma = 60, int n_smooth_ma = 3) {
+            size_t height = yuv.size();
+            size_t width = yuv[0].size();
 
-            // Return if one of the parameters are 0
+           // Return if one of the parameters are 0
             if (width == 0 || height == 0) return {};
 
             // Step 1: Remove slow-moving background component
-            vector<vector<uint8_t>> yuv_bg_ma = moving_average(width, height, yuv, n_bg_ma);
+            vector<vector<uint8_t>> yuv_bg_ma = moving_average(yuv, n_bg_ma);
             
             vector<vector<uint8_t>> yuv_detrended(height, vector<uint8_t>(width));
-            for (int i = 0; i < height; i++) {
-                for (int j = 0; j < width; j++) {                   
+            for (int i = 0; i < height; ++i) {
+                for (int j = 0; j < width; ++j) {                   
                     // Subtract the values
                     yuv_detrended[i][j] = yuv[i][j] - yuv_bg_ma[i][j];
                 }
@@ -167,16 +169,17 @@ class MovingAvg {
 
 
             // Step 2: Smooth the resulting PPG
-            vector<vector<uint8_t>> ppg_smoothed = moving_average(width, height, yuv_detrended, n_smooth_ma);
+            vector<vector<uint8_t>> ppg_smoothed = moving_average(yuv_detrended, n_smooth_ma);
 
             // Step 3: Remove NaNs (replace with 0)
             // Not necessray as we are working with uint8_t types which cannot be non-numbers
 
             // Step 4: Normalize to have a max delta of 'delta'
-            float max_val = 0.0f;
+            int8_t max_val = 0;
             for (int i = 0; i < height; i++) {
                 for (int j = 0; j < width; j++) {
-                    max_val = std::max(max_val, std::abs(ppg_smoothed[i][j]));
+                    // TODO: We are not sure if we are working with unsigend numers correctly, might need to look after conversion
+                    max_val = std::max(max_val, static_cast<int8_t>(std::abs(ppg_smoothed[i][j])));
                 }
             }
 
@@ -184,12 +187,13 @@ class MovingAvg {
             if (max_val > 0) {  // Avoid division by zero
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {
-                        ppg_smoothed[i][j] = delta * ppg_smoothed[i][j] / max_val;
+                       // TODO: We are not sure if we are working with unsigned numbers correctly, might need to look after conversion
+                        ppg_smoothed[i][j] = static_cast<int8_t>(delta * ppg_smoothed[i][j] / max_val);
                     }
                 }
             }
 
-            return result;
+            return ppg_smoothed; 
         }
 
         void csv_append(const std::string& filename, const std::vector<std::vector<double>>& data) {
@@ -215,8 +219,8 @@ class MovingAvg {
         // Welch's method on the CPU to return the most common frequency
         // freq resolution = fps/nfft
         double Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft = 8192) {
-            int num_estimators = bvps.size();
-            int num_frames = bvps[0].size();
+            size_t num_estimators = bvps.size();
+            size_t num_frames = bvps[0].size();
             int segment_size = 256; // = time between update * fps
             int overlap = 200;
 
