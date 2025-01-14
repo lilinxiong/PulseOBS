@@ -1,37 +1,77 @@
 #include <obs-module.h>
-#include <dlib/image_processing.h>
-#include <dlib/image_io.h>
-#include <dlib/opencv.h>
+#include <opencv2/imgproc.hpp>
 
-// Initialize dlib face detector
-dlib::frontal_face_detector face_detector = dlib::get_frontal_face_detector();
+#include <opencv2/opencv.hpp>
+#include <opencv2/objdetect.hpp>
+#include <vector>
+#include <iostream>
 
-// This function is called whenever a frame is received from the OBS source
-void on_frame_received(obs_source_t *source, obs_video_info *frame_info) {
-    // Assuming frame_info->data[0] contains the raw frame data (BGR or RGBA)
-    // Convert the frame data to dlib::cv_image format
-    dlib::cv_image<dlib::bgr_pixel> img(frame_info->data[0]);
+static cv::CascadeClassifier face_cascade;
+static bool cascade_loaded = false;
 
-    // Detect faces in the frame
-    std::vector<dlib::rectangle> faces = face_detector(img);
-
-    // If a face is detected, crop it
-    if (!faces.empty()) {
-        // Take the first detected face (you could iterate over faces if there are multiple)
-        dlib::rectangle face = faces[0];
-
-        // Crop the face region
-        dlib::matrix<dlib::bgr_pixel> face_region;
-        dlib::extract_image_chip(img, dlib::get_face_chip_details(face), face_region);
-
-        // Convert the cropped face back to a format OBS can render (e.g., BGR)
-        unsigned char* cropped_face_data = face_region.nc_data();
-
-        // Here you could process the cropped face data or use it later for other tasks
-        // For now, you can return the cropped face to OBS or save it for later
-        obs_source_video_render(source, cropped_face_data);  // Example placeholder function for rendering
-    } else {
-        // If no face is detected, you can either do nothing or process the frame as-is
-        obs_source_video_render(source, frame_info->data[0]);  // Example placeholder function for rendering
+if (!cascade_loaded) {
+    if (!face_cascade.load("haarcascade_frontalface_default.xml")) {
+        std::cerr << "Error loading face cascade!" << std::endl;
+        return;
     }
+    cascade_loaded = true;
 }
+
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <stdexcept>
+
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <stdexcept>
+#include <obs-module.h> // OBS API
+
+// Function to detect faces and create a mask
+std::vector<std::vector<bool>> detectFacesAndCreateMask(obs_source_frame *source, cv::CascadeClassifier &face_cascade) {
+    if (!source) {
+        throw std::runtime_error("Invalid OBS frame!");
+    }
+
+    // Verify the format (assume NV12 for this example)
+    if (source->format != VIDEO_FORMAT_NV12) {
+        throw std::runtime_error("Unsupported frame format! Expected NV12.");
+    }
+
+    // Retrieve frame dimensions and data
+    int width = source->width;
+    int height = source->height;
+
+    uint8_t *y_plane = source->data[0]; // Y plane
+    uint8_t *uv_plane = source->data[1]; // UV plane (interleaved for NV12)
+
+    // Create OpenCV Mat for YUV
+    cv::Mat y_channel(height, width, CV_8UC1, y_plane);
+    cv::Mat uv_channel(height / 2, width / 2, CV_8UC2, uv_plane); // UV interleaved
+
+    // Convert YUV (NV12) to BGR
+    cv::Mat yuv_frame;
+    cv::merge(std::vector<cv::Mat>{y_channel, uv_channel}, yuv_frame);
+    cv::Mat bgr_frame;
+    cv::cvtColor(yuv_frame, bgr_frame, cv::COLOR_YUV2BGR_NV12);
+
+    // Detect faces
+    std::vector<cv::Rect> faces;
+    face_cascade.detectMultiScale(bgr_frame, faces, 1.1, 10, 0, cv::Size(30, 30));
+
+    // Initialize 2D boolean mask
+    std::vector<std::vector<bool>> face_mask(height, std::vector<bool>(width, false));
+
+    // Mark pixels within detected face regions as true
+    for (const auto &face : faces) {
+        for (int y = face.y; y < face.y + face.height && y < height; ++y) {
+            for (int x = face.x; x < face.x + face.width && x < width; ++x) {
+                face_mask[y][x] = true;
+            }
+        }
+    }
+
+    return face_mask;
+}
+
+
+

@@ -7,8 +7,9 @@
 #include <fstream>
 #include <cmath>
 #include <complex>
-#include <fftw3.h>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 
 
 using namespace std;
@@ -18,17 +19,13 @@ class MovingAvg {
     private:
         int CHROMA_SIMILARITY = 100;
         
-        // void chromaKey(uint8_t *y, uint8_t *u, uint8_t *v, skinKey ?) {
+        // vector<vector<vector<uint8_t>>> frame_to_vector(video_data *frame) {
             
         // }
-
-        vector<vector<vector<uint8_t>>> frame_to_vector(video_data *frame) {
-            
-        }
         
 
-        vector<vector<uint8_t>> moving_average(
-            const vector<vector<uint8_t>>& yuv,
+        vector<vector<double>> moving_average(
+            const vector<vector<double>>& yuv,
             int n = 3
         ) {
             size_t width = yuv[0].size();
@@ -57,10 +54,10 @@ class MovingAvg {
             }
 
             // Convert the output matrix back to a vector of vectors with uint8_t
-            vector<vector<uint8_t>> result(height, vector<uint8_t>(width));
+            vector<vector<double>> result(height, vector<double>(width));
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {
-                    result[i][j] = static_cast<uint8_t>(round(output(i, j)));
+                    result[i][j] = output(i, j);
                 }
             }
 
@@ -69,17 +66,27 @@ class MovingAvg {
         }
 
         // TODO: Add skin key
-        vector<double_t> average_keyed(std::vector<std::vector<std::tuple<uint8_t, uint8_t, uint8_t>>> yuv) {
+        vector<double_t> average_keyed(std::vector<std::vector<std::tuple<double, double, double>>> yuv, std::vector<std::vector<bool>> skinkey = {}) {
             double sumY = 0.0, sumU = 0.0, sumV = 0.0;
             size_t count = 0;
 
             // Iterate through the frame pixels using the key
-            for (const auto& row : yuv) {
-                for (const auto& value : row) {
-                    sumY += static_cast<double>(get<0>(value));
-                    sumU += static_cast<double>(get<1>(value));
-                    sumV += static_cast<double>(get<2>(value));
-                    count++;
+            for (int i = 0; i < yuv.size(); ++i) {
+                for (int j = 0; j < yuv[0].size(); ++j) {
+                    if (skinkey.size() != 0) {
+                        if (skinkey[i][j]) {
+                            sumY += get<0>(yuv[i][j]);
+                            sumU += get<1>(yuv[i][j]);
+                            sumV += get<2>(yuv[i][j]);
+                            count++;
+                        }
+                    } else {
+                        sumY += get<0>(yuv[i][j]);
+                        sumU += get<1>(yuv[i][j]);
+                        sumV += get<2>(yuv[i][j]);
+                        count++;
+                    }
+                    
                 }
             }
 
@@ -91,7 +98,7 @@ class MovingAvg {
             }
         }
 
-        std::tuple<int, int, std::vector<std::vector<std::tuple<uint8_t, uint8_t, uint8_t>>>> processFrame(const obs_source_frame *frame) {
+        std::vector<std::vector<std::tuple<uint8_t, uint8_t, uint8_t>>> processFrame(const obs_source_frame *frame) {
             if (!frame) {
                 throw std::invalid_argument("Frame is null");
             }
@@ -141,15 +148,57 @@ class MovingAvg {
                 throw std::runtime_error("Unsupported video format for YUV extraction");
             }
 
-            return {width, height, yuvValues};
+            return yuvValues;
         }
 
-        void doThing(struct obs_source_frame *source) { // Assume frame in YUV format
-            auto [width, height, yuvValues] = processFrame(source);
+        uint8_t generateRandomNumber() {
+            return static_cast<uint8_t>(rand() % 256);
+        }
+
+        vector<vector<tuple<double, double, double>>> randomFrame() {
+            // Define the structure: a vector of 3x3 vectors containing tuples
+            std::vector<std::vector<std::tuple<double, double, double>>> frame(3);
+
+            for (int i = 0; i < 3; ++i) {
+                std::vector<std::tuple<double, double, double>> matrix;
+                for (int j = 0; j < 3; ++j) { // 3x3 matrix has 9 elements
+                    // Generate a tuple with three random numbers
+                    std::tuple<double, double, double> element = {
+                        static_cast<double>(generateRandomNumber()),
+                        static_cast<double>(generateRandomNumber()),
+                        static_cast<double>(generateRandomNumber())
+                    };
+                    matrix.push_back(element);
+                }
+                frame[i] = matrix;
+            }
+
+            return frame;
+        }
+
+        double doThing() { // Assume frame in YUV format: struct obs_source_frame *source
+
+            // auto [width, height, yuvValues] = processFrame(source);
+            srand(static_cast<unsigned>(time(0)));
+            vector<vector<double>> yuvValues; 
+            for (int frame = 0; frame < 10; frame++) {
+                std::vector<std::vector<std::tuple<double, double, double>>> testData = randomFrame();
+                yuvValues.push_back(average_keyed(testData));
+            }
+            
+            std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(yuvValues); 
+            
+            std::vector<vector<double>> ppg_w_ma;
+            for (auto& f: ppg_rgb_ma) {
+                std::vector<double> avg; 
+                avg.push_back((f[0] + f[1] + f[2]) / 3);
+                ppg_w_ma.push_back(avg);
+            }
+            return Welch_cpu_heart_rate(ppg_w_ma, 60);
         }
 
         // Function to magnify color
-        std::vector<vector<uint8_t>> magnify_colour_ma(const vector<vector<uint8_t>>& yuv, double delta = 50, int n_bg_ma = 60, int n_smooth_ma = 3) {
+        std::vector<vector<double>> magnify_colour_ma(const vector<vector<double>>& yuv, double delta = 50, int n_bg_ma = 60, int n_smooth_ma = 3) {
             size_t height = yuv.size();
             size_t width = yuv[0].size();
 
@@ -157,9 +206,9 @@ class MovingAvg {
             if (width == 0 || height == 0) return {};
 
             // Step 1: Remove slow-moving background component
-            vector<vector<uint8_t>> yuv_bg_ma = moving_average(yuv, n_bg_ma);
+            vector<vector<double>> yuv_bg_ma = moving_average(yuv, n_bg_ma);
             
-            vector<vector<uint8_t>> yuv_detrended(height, vector<uint8_t>(width));
+            vector<vector<double>> yuv_detrended(height, vector<double>(width));
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {                   
                     // Subtract the values
@@ -169,7 +218,7 @@ class MovingAvg {
 
 
             // Step 2: Smooth the resulting PPG
-            vector<vector<uint8_t>> ppg_smoothed = moving_average(yuv_detrended, n_smooth_ma);
+            vector<vector<double>> ppg_smoothed = moving_average(yuv_detrended, n_smooth_ma);
 
             // Step 3: Remove NaNs (replace with 0)
             // Not necessray as we are working with uint8_t types which cannot be non-numbers
@@ -188,7 +237,7 @@ class MovingAvg {
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {
                        // TODO: We are not sure if we are working with unsigned numbers correctly, might need to look after conversion
-                        ppg_smoothed[i][j] = static_cast<int8_t>(delta * ppg_smoothed[i][j] / max_val);
+                        ppg_smoothed[i][j] = static_cast<double>(delta * ppg_smoothed[i][j] / max_val);
                     }
                 }
             }
@@ -217,91 +266,98 @@ class MovingAvg {
         
 
         // Welch's method on the CPU to return the most common frequency
-        // freq resolution = fps/nfft
-        double Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft = 8192) {
-            size_t num_estimators = bvps.size();
-            size_t num_frames = bvps[0].size();
-            int segment_size = 256; // = time between update * fps
-            int overlap = 200;
+        // freq resolution = fps/nfft 
+        double Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft = 16) {
+            using Eigen::ArrayXd;
 
-            // Window function (Hann window)
-            std::vector<double> window(segment_size);
+            int num_estimators = static_cast<int>(bvps.size());
+            int num_frames = static_cast<int>(bvps[0].size());
+
+            // Define segment size and overlap
+            int segment_size = nfft;
+            int overlap = nfft / 2; // 50% overlap
+
+            // Hann window
+            ArrayXd hann_window(segment_size);
             for (int i = 0; i < segment_size; ++i) {
-                window[i] = 0.5 * (1 - std::cos(2 * M_PI * i / (segment_size - 1)));
+                hann_window[i] = 0.5 * (1 - std::cos(2 * M_PI * i / (segment_size - 1)));
             }
 
             // Frequencies
-            std::vector<double> frequencies(nfft / 2 + 1);
-            for (int i = 0; i <= nfft / 2; ++i) {
-                frequencies[i] = i * fps / nfft;
-            }
+            ArrayXd frequencies = ArrayXd::LinSpaced(nfft / 2 + 1, 0, fps / 2);
 
-            // FFTW plan and buffers
-            std::vector<double> segment(segment_size);
-            std::vector<std::complex<double>> fft_output(nfft / 2 + 1);
-            fftw_plan fft_plan = fftw_plan_dft_r2c_1d(nfft, segment.data(), reinterpret_cast<fftw_complex*>(fft_output.data()), FFTW_ESTIMATE);
+            // Initialize average PSD
+            ArrayXd avg_psd = ArrayXd::Zero(nfft / 2 + 1);
 
-            // Initialize a vector to store the average PSD across all estimators
-            std::vector<double> avg_psd(frequencies.size(), 0.0);
+            // Function to compute DFT manually
+            auto computeDFT = [](const ArrayXd& input) -> Eigen::ArrayXcd {
+                int N = static_cast<int>(input.size());
+                Eigen::ArrayXcd output(N);
 
-            for (int estimator = 0; estimator < num_estimators; ++estimator) {
+                for (int k = 0; k < N; ++k) {
+                    std::complex<double> sum(0.0, 0.0);
+                    for (int n = 0; n < N; ++n) {
+                        double angle = -2.0 * M_PI * k * n / N;
+                        sum += input[n] * std::exp(std::complex<double>(0, angle));
+                    }
+                    output[k] = sum;
+                }
+
+                return output;
+            };
+
+            // Iterate over all estimators
+            for (const auto& bvp : bvps) {
+                // Convert signal to Eigen array
+                ArrayXd signal = Eigen::Map<const ArrayXd>(bvp.data(), bvp.size());
+
                 // Divide signal into overlapping segments
                 int num_segments = 0;
-                std::vector<double> psd(frequencies.size(), 0.0);
-                for (int start = 0; start + segment_size <= bvps[estimator].size(); start += (segment_size - overlap)) {
-                    // Extract and window the segment
-                    for (int j = 0; j < segment_size; ++j) {
-                        segment[j] = bvps[estimator][start + j] * window[j];
-                    }
+                ArrayXd psd = ArrayXd::Zero(nfft / 2 + 1);
 
-                    // Perform FFT
-                    fftw_execute(fft_plan);
+                for (int start = 0; start + segment_size <= num_frames; start += (segment_size - overlap)) {
+                    // Extract segment and apply window
+                    ArrayXd segment = signal.segment(start, segment_size) * hann_window;
 
-                    // Compute power spectrum and accumulate
-                    for (size_t k = 0; k < fft_output.size(); ++k) {
-                        psd[k] += std::norm(fft_output[k]) / (segment_size * fps);
+                    // Compute DFT
+                    Eigen::ArrayXcd fft_result = computeDFT(segment);
+
+                    // Compute power spectrum
+                    for (int k = 0; k <= nfft / 2; ++k) {
+                        psd[k] += std::norm(fft_result[k]) / (segment_size * fps);
                     }
 
                     ++num_segments;
                 }
 
                 // Average PSD for this estimator
-                for (size_t k = 0; k < psd.size(); ++k) {
-                    psd[k] /= num_segments;
+                if (num_segments > 0) {
+                    psd /= num_segments;
                 }
 
                 // Accumulate into the overall average PSD
-                for (size_t k = 0; k < avg_psd.size(); ++k) {
-                    avg_psd[k] += psd[k];
-                }
+                avg_psd += psd;
             }
 
-            // Finalize the average PSD across all estimators
-            for (size_t k = 0; k < avg_psd.size(); ++k) {
-                avg_psd[k] /= num_estimators;
-            }
+            // Finalize average PSD across all estimators
+            avg_psd /= num_estimators;
 
             // Find the frequency with the maximum average PSD
-            size_t max_index = 0;
-            for (size_t k = 1; k < avg_psd.size(); ++k) {
-                if (avg_psd[k] > avg_psd[max_index]) {
-                    max_index = k;
-                }
-            }
+            int max_index;
+            avg_psd.maxCoeff(&max_index);
 
-            // Clean up FFTW plan
-            fftw_destroy_plan(fft_plan);
-
-            // Return the most common frequency
             return frequencies[max_index];
         }
-
+        
     public:
-        void algorithm() {
-            std::cout << "Yay" << std::endl;
-        }
-
-        
-
-        
+        double algorithm() {
+            return doThing();
+        }   
 };
+
+int main() {
+    MovingAvg avg;
+    cout << "hellllo are you thereeeeee" << endl;
+    cout << avg.algorithm() << endl;
+    return 0;
+}
