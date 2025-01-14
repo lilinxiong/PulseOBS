@@ -45,6 +45,8 @@ static const char *get_heart_rate_source_name(void *) {
 
 // Create function
 static void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source) {
+    UNUSED_PARAMETER(settings);
+    
     obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
     // const char* selected_device = obs_data_get_string(settings, "heart_rate_device");
 
@@ -80,13 +82,17 @@ static void heart_rate_source_destroy(void *data) {
 
 // Tick function
 static void heart_rate_source_tick(void *data, float seconds) {
+    UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
-    struct heart_rate_source * hrs= (struct heart_rate_source *)data;
+    // struct heart_rate_source * hrs= (struct heart_rate_source *)data;
     UNUSED_PARAMETER(seconds);
     // Logic to update per frame
 }
 
 int calculateHeartRate(uint8_t *data[], uint32_t width, uint32_t height) {
+    UNUSED_PARAMETER(data);
+    UNUSED_PARAMETER(width);
+    UNUSED_PARAMETER(height);
     // Logic to calculate heart rate
     return 100;
 }
@@ -112,6 +118,7 @@ static void heart_rate_source_render(void *data, gs_effect_t *effect) {
 
 // Get width function
 static uint32_t heart_rate_source_get_width(void *data) {
+    UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of WIDTH!!!!!!!!!");
     // struct heart_rate_source *hrs = (struct heart_rate_source *)data;
     // obs_log(LOG_INFO, "END OF WIDTH!!!!! %s", obs_source_get_width(hrs->source));
@@ -121,6 +128,7 @@ static uint32_t heart_rate_source_get_width(void *data) {
 
 // Get height function
 static uint32_t heart_rate_source_get_height(void *data) {
+    UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of HEIGHT!!!!!!!!!");
     // struct heart_rate_source *hrs = (struct heart_rate_source *)data;
     // return obs_source_get_height(hrs->source);
@@ -138,6 +146,7 @@ bool store_device_references(void *param, obs_source_t *source) {
 
 obs_properties_t* heart_rate_source_properties(void* data)
 {
+    UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "PROPERTIES");
     obs_properties_t* props = obs_properties_create();
 
