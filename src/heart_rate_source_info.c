@@ -11,5 +11,5 @@ struct obs_source_info heart_rate_source_info = {
     .video_render = heart_rate_source_render,
     .get_width = heart_rate_source_get_width,
     .get_height = heart_rate_source_get_height,
-    .get_properties = heart_rate_source_properties
+    .get_properties = heart_rate_source_properties,
 };

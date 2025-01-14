@@ -34,6 +34,6 @@ if(ENABLE_QT)
                AUTORCC ON)
 endif()
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.cpp src/heart_rate_widget.cpp src/pulse.cpp src/heart_rate_source_info.c) 
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.c src/heart_rate_widget.cpp src/pulse.cpp src/heart_rate_source_info.c) 
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
