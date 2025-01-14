@@ -8,7 +8,7 @@
 #include "heart_rate_widget.hpp"
 #include <vector>
 #include "plugin-support.h"
-#include "heart_rate_source_info.h"
+#include "heart_rate_source.h"
 
 const char *get_heart_rate_source_name(void *)
 {

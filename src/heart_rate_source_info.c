@@ -1,4 +1,4 @@
-#include "heart_rate_source_info.h"
+#include "heart_rate_source.h"
 
 struct obs_source_info heart_rate_source_info = {
 	.id = "heart_rate_source",
