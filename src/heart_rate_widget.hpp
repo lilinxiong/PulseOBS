@@ -5,16 +5,16 @@
 #include <QLabel>
 
 class HeartRateWidget : public QWidget {
-    Q_OBJECT
+	Q_OBJECT
 
-  public:
-    HeartRateWidget(QWidget *parent = nullptr);
-    ~HeartRateWidget();
+public:
+	HeartRateWidget(QWidget *parent = nullptr);
+	~HeartRateWidget();
 
-    void updateHeartRate(int heartRate);
+	void updateHeartRate(int heartRate);
 
-  private:
-    QLabel *heartRateLabel;
+private:
+	QLabel *heartRateLabel;
 };
 
 #endif
