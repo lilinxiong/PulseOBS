@@ -202,7 +202,7 @@ class MovingAvg {
             size_t height = yuv.size();
             size_t width = yuv[0].size();
 
-           // Return if one of the parameters are 0
+            // Return if one of the parameters are 0
             if (width == 0 || height == 0) return {};
 
             // Step 1: Remove slow-moving background component
