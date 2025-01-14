@@ -19,11 +19,11 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-module.h>
 #include "plugin-support.h"
 #include "heart_rate_widget.hpp"
-#include "pulse.hpp"
+#include "heart_rate_source_info.h"
 
 // comment
 HeartRateWidget *heartRateWidget = nullptr;
-extern obs_source_info *heart_rate_source_info;
+extern struct obs_source_info heart_rate_source_info;
 
 //main
 OBS_DECLARE_MODULE()
@@ -31,7 +31,7 @@ OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 bool obs_module_load(void)
 {
-	obs_register_source(heart_rate_source_info);
+	obs_register_source(&heart_rate_source_info);
 	heartRateWidget = new HeartRateWidget();
 	heartRateWidget->show();
 

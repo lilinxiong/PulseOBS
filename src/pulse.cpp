@@ -5,46 +5,22 @@
 #include <obs-data.h>
 #include <graphics/graphics.h>
 #include <util/platform.h>
-#include "pulse.hpp"
 #include "heart_rate_widget.hpp"
 #include <vector>
 #include "plugin-support.h"
+#include "heart_rate_source_info.h"
 
-static const char *get_heart_rate_source_name(void *);
-static void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source);
-static void heart_rate_source_destroy(void *data);
-static void heart_rate_source_tick(void *data, float seconds);
-static void heart_rate_source_render(void *data, gs_effect_t *effect);
-static uint32_t heart_rate_source_get_width(void *data);
-static uint32_t heart_rate_source_get_height(void *data);
-obs_properties_t* heart_rate_source_properties(void* data);
-
-static obs_source_info *initialiseHeartRateSourceInfo();
-
-obs_source_info *heart_rate_source_info  = initialiseHeartRateSourceInfo();
-
-obs_source_info *initialiseHeartRateSourceInfo() {
-    obs_source_info *heart_rate_source_info = (obs_source_info *)bzalloc(sizeof(obs_source_info));
-    heart_rate_source_info->id = "heart_rate_source";
-    heart_rate_source_info->type = OBS_SOURCE_TYPE_INPUT;
-    heart_rate_source_info->output_flags = OBS_SOURCE_VIDEO;
-    heart_rate_source_info->get_name = get_heart_rate_source_name;
-    heart_rate_source_info->create = heart_rate_source_create;
-    heart_rate_source_info->destroy = heart_rate_source_destroy;
-    heart_rate_source_info->video_tick = heart_rate_source_tick;
-    heart_rate_source_info->video_render = heart_rate_source_render;
-    heart_rate_source_info->get_width = heart_rate_source_get_width;
-    heart_rate_source_info->get_height = heart_rate_source_get_height;
-    heart_rate_source_info->get_properties = heart_rate_source_properties;
-    return heart_rate_source_info;
-}
-
-static const char *get_heart_rate_source_name(void *) {
+const char *get_heart_rate_source_name(void *) {
     return "Heart Rate Monitor";
 }
 
-// Create function
-static void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source) {
+struct heart_rate_source {
+    obs_source_t *source;
+};
+
+
+// Create function 
+void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source) {
     UNUSED_PARAMETER(settings);
     
     obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
@@ -75,13 +51,13 @@ static void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source
 }
 
 // Destroy function
-static void heart_rate_source_destroy(void *data) {
+void heart_rate_source_destroy(void *data) {
     obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
     bfree(data);
 }
 
 // Tick function
-static void heart_rate_source_tick(void *data, float seconds) {
+void heart_rate_source_tick(void *data, float seconds) {
     UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
     // struct heart_rate_source * hrs= (struct heart_rate_source *)data;
@@ -98,7 +74,7 @@ int calculateHeartRate(uint8_t *data[], uint32_t width, uint32_t height) {
 }
 
 // Render function
-static void heart_rate_source_render(void *data, gs_effect_t *effect) {
+void heart_rate_source_render(void *data, gs_effect_t *effect) {
     obs_log(LOG_INFO, "--------------Start of RENDER!!!!!!!!!");
     struct heart_rate_source *hrs = (struct heart_rate_source *)data;
     UNUSED_PARAMETER(effect);
@@ -106,18 +82,18 @@ static void heart_rate_source_render(void *data, gs_effect_t *effect) {
     struct obs_source_frame *frame = obs_source_get_frame(hrs->source);
     if (frame) {
         // Extract RGB data and process it for heart rate
-        int heartRate = calculateHeartRate(frame->data, frame->width, frame->height);
+        // int heartRate = calculateHeartRate(frame->data, frame->width, frame->height);
 
         obs_source_release_frame(hrs->source, frame);
 
-        if (heartRateWidget) {
-          heartRateWidget->updateHeartRate(heartRate);
-        }
+        // if (heartRateWidget) {
+        //   heartRateWidget->updateHeartRate(heartRate);
+        // }
     }
 }
 
 // Get width function
-static uint32_t heart_rate_source_get_width(void *data) {
+uint32_t heart_rate_source_get_width(void *data) {
     UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of WIDTH!!!!!!!!!");
     // struct heart_rate_source *hrs = (struct heart_rate_source *)data;
@@ -127,7 +103,7 @@ static uint32_t heart_rate_source_get_width(void *data) {
 }
 
 // Get height function
-static uint32_t heart_rate_source_get_height(void *data) {
+uint32_t heart_rate_source_get_height(void *data) {
     UNUSED_PARAMETER(data);
     obs_log(LOG_INFO, "--------------Start of HEIGHT!!!!!!!!!");
     // struct heart_rate_source *hrs = (struct heart_rate_source *)data;
