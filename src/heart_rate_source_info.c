@@ -9,7 +9,5 @@ struct obs_source_info heart_rate_source_info = {
 	.destroy = heart_rate_source_destroy,
 	.video_tick = heart_rate_source_tick,
 	.video_render = heart_rate_source_render,
-	// .get_width = heart_rate_source_get_width,
-	// .get_height = heart_rate_source_get_height,
 	.get_properties = heart_rate_source_properties,
 };

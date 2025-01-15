@@ -216,20 +216,9 @@ void heart_rate_source_destroy(void *data)
 // Tick function
 void heart_rate_source_tick(void *data, float seconds)
 {
-	UNUSED_PARAMETER(data);
-	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
-	// struct heart_rate_source * hrs= (struct heart_rate_source *)data;
 	UNUSED_PARAMETER(seconds);
+	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
 	// Logic to update per frame
-}
-
-int calculateHeartRate(uint8_t *data[], uint32_t width, uint32_t height)
-{
-	UNUSED_PARAMETER(data);
-	UNUSED_PARAMETER(width);
-	UNUSED_PARAMETER(height);
-	// Logic to calculate heart rate
-	return 100;
 }
 
 // Render function
@@ -252,66 +241,11 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	obs_source_skip_video_filter(hrs->source);
 }
 
-// Get width function
-uint32_t heart_rate_source_get_width(void *data)
-{
-	UNUSED_PARAMETER(data);
-	obs_log(LOG_INFO, "--------------Start of WIDTH!!!!!!!!!");
-	// struct heart_rate_source *hrs = (struct heart_rate_source *)data;
-	// obs_log(LOG_INFO, "END OF WIDTH!!!!! %s", obs_source_get_width(hrs->source));
-	// return obs_source_get_width(hrs->source);
-	return 100;
-}
-
-// Get height function
-uint32_t heart_rate_source_get_height(void *data)
-{
-	UNUSED_PARAMETER(data);
-	obs_log(LOG_INFO, "--------------Start of HEIGHT!!!!!!!!!");
-	// struct heart_rate_source *hrs = (struct heart_rate_source *)data;
-	// return obs_source_get_height(hrs->source);
-	return 100;
-}
-
-bool store_device_references(void *param, obs_source_t *source)
-{
-	auto *device_references =
-		static_cast<std::vector<obs_source_t *> *>(param);
-
-	obs_source_t *s = obs_source_get_ref(source);
-	device_references->push_back(s);
-
-	return true;
-}
-
 obs_properties_t *heart_rate_source_properties(void *data)
 {
 	UNUSED_PARAMETER(data);
 	obs_log(LOG_INFO, "PROPERTIES");
 	obs_properties_t *props = obs_properties_create();
-
-	// Add properties
-	obs_properties_add_text(props, "heart_rate_device", "Webcam Device",
-				OBS_TEXT_DEFAULT);
-
-	// Populate available video devices
-	obs_property_t *devices_property = obs_properties_add_list(
-		props, "heart_rate_device_list", "Choose Webcam",
-		OBS_COMBO_TYPE_EDITABLE, OBS_COMBO_FORMAT_STRING);
-
-	// Vector to store references
-	std::vector<obs_source_t *> device_references;
-
-	obs_enum_sources(store_device_references, &device_references);
-
-	obs_log(LOG_INFO, "GRAB DEVICES");
-
-	for (obs_source_t *source : device_references) {
-		const char *source_name = obs_source_get_name(source);
-		obs_log(LOG_INFO, "SOURCENAME: %s", source_name);
-		obs_property_list_add_string(devices_property, source_name,
-					     source_name);
-	}
 
 	return props;
 }
