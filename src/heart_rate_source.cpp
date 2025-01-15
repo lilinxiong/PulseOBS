@@ -221,7 +221,7 @@ void heart_rate_source_tick(void *data, float seconds)
 
 	struct heart_rate_source *hrs =
 		reinterpret_cast<struct heart_rate_source *>(data);
-		
+
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
