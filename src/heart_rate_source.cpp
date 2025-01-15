@@ -218,6 +218,13 @@ void heart_rate_source_tick(void *data, float seconds)
 {
 	UNUSED_PARAMETER(seconds);
 	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
+
+	struct heart_rate_source *hrs =
+		reinterpret_cast<struct heart_rate_source *>(data);
+		
+	if (!obs_source_enabled(hrs->source)) {
+		return;
+	}
 	// Logic to update per frame
 }
 
