@@ -8,11 +8,19 @@
 #include <vector>
 #include "plugin-support.h"
 #include "heart_rate_source.h"
+#include <mutex>
 
 const char *get_heart_rate_source_name(void *)
 {
 	return "Heart Rate Monitor";
 }
+
+struct input_BGRA_data {
+	uint8_t *data;
+	uint32_t width;
+	uint32_t height;
+	uint32_t linesize;
+};
 
 struct heart_rate_source {
 	obs_source_t *source;
@@ -20,11 +28,16 @@ struct heart_rate_source {
 		texrender; // buffer in GPU where rendering operations are performed
 	gs_stagesurf_t *
 		stagesurface; // facilitates transferring rendered textures from the GPU to CPU
+	input_BGRA_data *BGRA_data;
+	std::mutex BGRA_data_mutex;
 };
 
-static void processBGRAData(uint8_t *data, uint32_t width, uint32_t height,
-			    uint32_t linesize)
+static void processBGRAData(struct input_BGRA_data *BGRA_data)
 {
+	uint8_t *data = BGRA_data->data;
+	uint32_t width = BGRA_data->width;
+	uint32_t height = BGRA_data->height;
+	uint32_t linesize = BGRA_data->linesize;
 	uint64_t sumB = 0, sumG = 0, sumR = 0, sumA = 0;
 	uint32_t pixel_count = width * height;
 
@@ -50,10 +63,11 @@ static void processBGRAData(uint8_t *data, uint32_t width, uint32_t height,
 		averageG, averageR, averageA);
 }
 
-static bool getBGRAFromStageSurface(struct heart_rate_source *hrs,
-				    uint32_t &width, uint32_t &height)
+static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 {
 	obs_log(LOG_INFO, "--------BGRASTART!!!!!!!!");
+	uint32_t width;
+	uint32_t height;
 
 	// Check if the source is enabled
 	if (!obs_source_enabled(hrs->source)) {
@@ -82,8 +96,6 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs,
 
 	// Resets the texture renderer and begins rendering with the specified width and height
 	gs_texrender_reset(hrs->texrender);
-	obs_log(LOG_INFO, "width: %d", width);
-	obs_log(LOG_INFO, "height: %d", height);
 	if (!hrs->texrender) {
 		obs_log(LOG_INFO, "texrender is null");
 	}
@@ -175,14 +187,16 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs,
 	}
 
 	{
-		// TODO: CV MAT, need a lock
+		std::lock_guard<std::mutex> lock(hrs->BGRA_data_mutex);
+		struct input_BGRA_data *BGRA_data =
+			(struct input_BGRA_data *)bzalloc(
+				sizeof(struct input_BGRA_data));
+		BGRA_data->width = width;
+		BGRA_data->height = height;
+		BGRA_data->linesize = linesize;
+		BGRA_data->data = video_data;
+		hrs->BGRA_data = BGRA_data;
 	}
-
-	// // Call our algorithm :)
-	// algorithm(video_data, width, height, linesize);
-	obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
-	processBGRAData(video_data, width, height, linesize);
-	obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	// Use gs_stagesurface_unmap to unmap the stage surface, releasing the mapped memory.
 	gs_stagesurface_unmap(hrs->stagesurface);
@@ -196,8 +210,10 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 
 	obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
 
-	struct heart_rate_source *hrs = (struct heart_rate_source *)bzalloc(
-		sizeof(struct heart_rate_source));
+	void *data = bmalloc(sizeof(struct heart_rate_source));
+	struct heart_rate_source *hrs = new (data) heart_rate_source();
+	// (struct heart_rate_source *)bzalloc(
+	// 	sizeof(struct heart_rate_source));
 
 	hrs->source = source;
 	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
@@ -242,8 +258,15 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	uint32_t width, height;
-	getBGRAFromStageSurface(hrs, width, height);
+	if (!getBGRAFromStageSurface(hrs)) {
+		obs_log(LOG_INFO, "--------BGRA FAIL!!!!!!!!");
+		obs_source_skip_video_filter(hrs->source);
+		return;
+	}
+
+	obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
+	processBGRAData(hrs->BGRA_data);
+	obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	obs_source_skip_video_filter(hrs->source);
 }
