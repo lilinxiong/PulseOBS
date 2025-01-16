@@ -8,29 +8,95 @@
 #include <vector>
 #include "plugin-support.h"
 #include "heart_rate_source.h"
-#include <mutex>
 
 const char *get_heart_rate_source_name(void *)
 {
 	return "Heart Rate Monitor";
 }
 
-struct input_BGRA_data {
-	uint8_t *data;
-	uint32_t width;
-	uint32_t height;
-	uint32_t linesize;
-};
+// Create function
+void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
+{
+	UNUSED_PARAMETER(settings);
 
-struct heart_rate_source {
-	obs_source_t *source;
-	gs_texrender_t *
-		texrender; // buffer in GPU where rendering operations are performed
-	gs_stagesurf_t *
-		stagesurface; // facilitates transferring rendered textures from the GPU to CPU
-	input_BGRA_data *BGRA_data;
-	std::mutex BGRA_data_mutex;
-};
+	obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
+
+	void *data = bmalloc(sizeof(struct heart_rate_source));
+	struct heart_rate_source *hrs = new (data) heart_rate_source();
+	// (struct heart_rate_source *)bzalloc(
+	// 	sizeof(struct heart_rate_source));
+
+	hrs->source = source;
+	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
+
+	obs_log(LOG_INFO, "--------------END OF CREATE!!!!!");
+	return hrs;
+}
+
+// Destroy function
+void heart_rate_source_destroy(void *data)
+{
+	obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
+	struct heart_rate_source *hrs =
+		reinterpret_cast<struct heart_rate_source *>(data);
+
+	if (hrs) {
+		hrs->isDisabled = true;
+		obs_enter_graphics();
+		gs_texrender_destroy(hrs->texrender);
+		if (hrs->stagesurface) {
+			gs_stagesurface_destroy(hrs->stagesurface);
+		}
+		obs_leave_graphics();
+		hrs->~heart_rate_source();
+		bfree(hrs);
+	}
+}
+
+obs_properties_t *heart_rate_source_properties(void *data)
+{
+	UNUSED_PARAMETER(data);
+	obs_log(LOG_INFO, "PROPERTIES");
+	obs_properties_t *props = obs_properties_create();
+
+	return props;
+}
+
+void heart_rate_source_activate(void *data)
+{
+	obs_log(LOG_INFO, "Heart rate monitor activated");
+	struct heart_rate_source *hrs =
+		reinterpret_cast<heart_rate_source *>(data);
+	hrs->isDisabled = false;
+}
+
+void heart_rate_source_deactivate(void *data)
+{
+	obs_log(LOG_INFO, "Heart rate monitor deactivated");
+	struct heart_rate_source *hrs =
+		reinterpret_cast<heart_rate_source *>(data);
+	hrs->isDisabled = true;
+}
+
+// Tick function
+void heart_rate_source_tick(void *data, float seconds)
+{
+	UNUSED_PARAMETER(seconds);
+
+	struct heart_rate_source *hrs =
+		reinterpret_cast<struct heart_rate_source *>(data);
+
+	if (hrs->isDisabled) {
+		return;
+	}
+
+	if (!obs_source_enabled(hrs->source)) {
+		return;
+	}
+	
+	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
+	// Logic to update per frame
+}
 
 static void processBGRAData(struct input_BGRA_data *BGRA_data)
 {
@@ -203,59 +269,6 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 	return true;
 }
 
-// Create function
-void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
-{
-	UNUSED_PARAMETER(settings);
-
-	obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
-
-	void *data = bmalloc(sizeof(struct heart_rate_source));
-	struct heart_rate_source *hrs = new (data) heart_rate_source();
-	// (struct heart_rate_source *)bzalloc(
-	// 	sizeof(struct heart_rate_source));
-
-	hrs->source = source;
-	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
-
-	obs_log(LOG_INFO, "--------------END OF CREATE!!!!!");
-	return hrs;
-}
-
-// Destroy function
-void heart_rate_source_destroy(void *data)
-{
-	obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
-	struct heart_rate_source *hrs =
-		reinterpret_cast<struct heart_rate_source *>(data);
-
-	if (hrs) {
-		obs_enter_graphics();
-		gs_texrender_destroy(hrs->texrender);
-		if (hrs->stagesurface) {
-			gs_stagesurface_destroy(hrs->stagesurface);
-		}
-		obs_leave_graphics();
-		hrs->~heart_rate_source();
-		bfree(hrs);
-	}
-}
-
-// Tick function
-void heart_rate_source_tick(void *data, float seconds)
-{
-	UNUSED_PARAMETER(seconds);
-	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
-
-	struct heart_rate_source *hrs =
-		reinterpret_cast<struct heart_rate_source *>(data);
-
-	if (!obs_source_enabled(hrs->source)) {
-		return;
-	}
-	// Logic to update per frame
-}
-
 // Render function
 void heart_rate_source_render(void *data, gs_effect_t *effect)
 {
@@ -270,6 +283,11 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
+	if (hrs->isDisabled) {
+		obs_source_skip_video_filter(hrs->source);
+		return;
+	}
+
 	if (!getBGRAFromStageSurface(hrs)) {
 		obs_log(LOG_INFO, "--------BGRA FAIL!!!!!!!!");
 		obs_source_skip_video_filter(hrs->source);
@@ -281,13 +299,4 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	obs_source_skip_video_filter(hrs->source);
-}
-
-obs_properties_t *heart_rate_source_properties(void *data)
-{
-	UNUSED_PARAMETER(data);
-	obs_log(LOG_INFO, "PROPERTIES");
-	obs_properties_t *props = obs_properties_create();
-
-	return props;
 }

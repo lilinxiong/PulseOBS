@@ -7,7 +7,9 @@ struct obs_source_info heart_rate_source_info = {
 	.get_name = get_heart_rate_source_name,
 	.create = heart_rate_source_create,
 	.destroy = heart_rate_source_destroy,
+	.activate = heart_rate_source_activate,
+	.deactivate = heart_rate_source_deactivate,
+	.get_properties = heart_rate_source_properties,
 	.video_tick = heart_rate_source_tick,
 	.video_render = heart_rate_source_render,
-	.get_properties = heart_rate_source_properties,
 };
