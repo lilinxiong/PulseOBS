@@ -226,7 +226,19 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 void heart_rate_source_destroy(void *data)
 {
 	obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
-	bfree(data);
+	struct heart_rate_source *hrs =
+		reinterpret_cast<struct heart_rate_source *>(data);
+
+	if (hrs) {
+		obs_enter_graphics();
+		gs_texrender_destroy(hrs->texrender);
+		if (hrs->stagesurface) {
+			gs_stagesurface_destroy(hrs->stagesurface);
+		}
+		obs_leave_graphics();
+		hrs->~heart_rate_source();
+		bfree(hrs);
+	}
 }
 
 // Tick function
