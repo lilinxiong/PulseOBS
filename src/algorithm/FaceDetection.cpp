@@ -5,6 +5,8 @@
 #include <opencv2/objdetect.hpp>
 #include <vector>
 #include <iostream>
+#include <stdexcept>
+
 
 static cv::CascadeClassifier face_cascade;
 static bool cascade_loaded = false;
@@ -17,14 +19,7 @@ if (!cascade_loaded) {
     cascade_loaded = true;
 }
 
-#include <opencv2/opencv.hpp>
-#include <vector>
-#include <stdexcept>
 
-#include <opencv2/opencv.hpp>
-#include <vector>
-#include <stdexcept>
-#include <obs-module.h> // OBS API
 
 // Function to detect faces and create a mask
 std::vector<std::vector<bool>> detectFacesAndCreateMask(obs_source_frame *source, cv::CascadeClassifier &face_cascade) {
