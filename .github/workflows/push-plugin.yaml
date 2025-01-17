@@ -1,11 +1,9 @@
-name: Push to master
+name: Push to Plugin
 run-name: ${{ github.ref_name }} push run 🚀
 on:
   push:
     branches:
-      - master
-      - main
-      - 'release/**'
+      - plugin
     tags:
       - '*'
 permissions:
