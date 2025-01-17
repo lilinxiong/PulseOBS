@@ -8,6 +8,9 @@
 #include <vector>
 #include "plugin-support.h"
 #include "heart_rate_source.h"
+#include "algorithm/HeartRateAlgorithm.h"
+
+MovingAvg avg;
 
 const char *get_heart_rate_source_name(void *)
 {
@@ -100,33 +103,39 @@ void heart_rate_source_tick(void *data, float seconds)
 
 static void processBGRAData(struct input_BGRA_data *BGRA_data)
 {
-	uint8_t *data = BGRA_data->data;
-	uint32_t width = BGRA_data->width;
-	uint32_t height = BGRA_data->height;
-	uint32_t linesize = BGRA_data->linesize;
-	uint64_t sumB = 0, sumG = 0, sumR = 0, sumA = 0;
-	uint32_t pixel_count = width * height;
+	// uint8_t *data = BGRA_data->data;
+	// uint32_t width = BGRA_data->width;
+	// uint32_t height = BGRA_data->height;
+	// uint32_t linesize = BGRA_data->linesize;
+	// uint64_t sumB = 0, sumG = 0, sumR = 0, sumA = 0;
+	// uint32_t pixel_count = width * height;
 
-	for (uint32_t y = 0; y < height; ++y) {
-		for (uint32_t x = 0; x < width; ++x) {
-			uint8_t B = data[y * linesize + x * 4 + 0];
-			uint8_t G = data[y * linesize + x * 4 + 1];
-			uint8_t R = data[y * linesize + x * 4 + 2];
-			uint8_t A = data[y * linesize + x * 4 + 3];
-			sumB += B;
-			sumG += G;
-			sumR += R;
-			sumA += A;
-		}
-	}
+	// for (uint32_t y = 0; y < height; ++y) {
+	// 	for (uint32_t x = 0; x < width; ++x) {
+	// 		uint8_t B = data[y * linesize + x * 4 + 0];
+	// 		uint8_t G = data[y * linesize + x * 4 + 1];
+	// 		uint8_t R = data[y * linesize + x * 4 + 2];
+	// 		uint8_t A = data[y * linesize + x * 4 + 3];
+	// 		sumB += B;
+	// 		sumG += G;
+	// 		sumR += R;
+	// 		sumA += A;
+	// 	}
+	// }
 
-	double averageB = static_cast<double>(sumB) / pixel_count;
-	double averageG = static_cast<double>(sumG) / pixel_count;
-	double averageR = static_cast<double>(sumR) / pixel_count;
-	double averageA = static_cast<double>(sumA) / pixel_count;
+	// double averageB = static_cast<double>(sumB) / pixel_count;
+	// double averageG = static_cast<double>(sumG) / pixel_count;
+	// double averageR = static_cast<double>(sumR) / pixel_count;
+	// double averageA = static_cast<double>(sumA) / pixel_count;
 
-	obs_log(LOG_INFO, "Average B: %f, G: %f, R: %f, A: %f\n", averageB,
-		averageG, averageR, averageA);
+	// obs_log(LOG_INFO, "Average B: %f, G: %f, R: %f, A: %f\n", averageB,
+	// 	averageG, averageR, averageA);
+
+	double heart_rate = avg.calculateHeartRate(BGRA_data);
+
+	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
+	// number multiple times (shouldn't affect plugin)
+
 }
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
