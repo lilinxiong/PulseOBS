@@ -3,7 +3,6 @@
 
 #include <obs-module.h>
 
-
 #ifdef __cplusplus
 #include <mutex>
 #else
@@ -14,25 +13,27 @@
 extern "C" {
 #endif
 
+#define TEXT_SOURCE_NAME "Heart Rate Display"
+
 struct input_BGRA_data {
-    uint8_t *data;
-    uint32_t width;
-    uint32_t height;
-    uint32_t linesize;
+	uint8_t *data;
+	uint32_t width;
+	uint32_t height;
+	uint32_t linesize;
 };
 
 struct heart_rate_source {
-    obs_source_t *source;
-    gs_texrender_t *texrender;
-    gs_stagesurf_t *stagesurface;
+	obs_source_t *source;
+	gs_texrender_t *texrender;
+	gs_stagesurf_t *stagesurface;
 #ifdef __cplusplus
-		input_BGRA_data *BGRA_data;
-    std::mutex BGRA_data_mutex;  // C++ mutex
+	input_BGRA_data *BGRA_data;
+	std::mutex BGRA_data_mutex; // C++ mutex
 #else
-    struct input_BGRA_data *BGRA_data;
-    void *BGRA_data_mutex;  // Placeholder for C compatibility
+	struct input_BGRA_data *BGRA_data;
+	void *BGRA_data_mutex; // Placeholder for C compatibility
 #endif
-    bool isDisabled;
+	bool isDisabled;
 };
 
 // Function declarations

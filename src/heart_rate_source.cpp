@@ -6,12 +6,79 @@
 #include <graphics/graphics.h>
 #include <util/platform.h>
 #include <vector>
+#include <sstream>
 #include "plugin-support.h"
 #include "heart_rate_source.h"
 
 const char *get_heart_rate_source_name(void *)
 {
 	return "Heart Rate Monitor";
+}
+
+static void create_obs_heart_display_source_if_needed()
+{
+	// check if a source called TEXT_SOURCE_NAME exists
+	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
+	if (source) {
+		obs_log(LOG_INFO, "SOURCE ALREADY EXISTS!!!!!!!");
+		// source already exists, release it
+		obs_source_release(source);
+		return;
+	}
+
+	// create a new OBS text source called TEXT_SOURCE_NAME
+	obs_source_t *scene_as_source = obs_frontend_get_current_scene();
+	obs_scene_t *scene = obs_scene_from_source(scene_as_source);
+	source = obs_source_create("text_ft2_source_v2", TEXT_SOURCE_NAME,
+				   nullptr, nullptr);
+
+	if (source) {
+		// add source to the current scene
+		obs_scene_add(scene, source);
+		// set source settings
+		obs_data_t *source_settings = obs_source_get_settings(source);
+		obs_data_set_bool(source_settings, "word_wrap", true);
+		obs_data_set_bool(source_settings, "extents", true);
+		obs_data_set_bool(source_settings, "outline", true);
+		obs_data_set_int(source_settings, "outline_color", 4278190080);
+		obs_data_set_int(source_settings, "outline_size", 7);
+		obs_data_set_int(source_settings, "extents_cx", 1500);
+		obs_data_set_int(source_settings, "extents_cy", 230);
+		obs_data_t *font_data = obs_data_create();
+		obs_data_set_string(font_data, "face", "Arial");
+		obs_data_set_string(font_data, "style", "Regular");
+		obs_data_set_int(font_data, "size", 72);
+		obs_data_set_int(font_data, "flags", 0);
+		obs_data_set_obj(source_settings, "font", font_data);
+		obs_data_release(font_data);
+
+		std::string heartRateText = "Heart Rate: 0 BPM";
+		obs_data_set_string(source_settings, "text",
+				    heartRateText.c_str());
+		obs_source_update(source, source_settings);
+		obs_data_release(source_settings);
+
+		// set transform settings
+		obs_transform_info transform_info;
+		transform_info.pos.x = 260.0;
+		transform_info.pos.y = 1040.0 - 50.0;
+		transform_info.bounds.x = 500.0;
+		transform_info.bounds.y = 145.0;
+		transform_info.bounds_type =
+			obs_bounds_type::OBS_BOUNDS_SCALE_INNER;
+		transform_info.bounds_alignment = OBS_ALIGN_CENTER;
+		transform_info.alignment = OBS_ALIGN_CENTER;
+		transform_info.scale.x = 1.0;
+		transform_info.scale.y = 1.0;
+		transform_info.rot = 0.0;
+		obs_sceneitem_t *source_sceneitem =
+			obs_scene_sceneitem_from_source(scene, source);
+		obs_sceneitem_set_info2(source_sceneitem, &transform_info);
+		obs_sceneitem_release(source_sceneitem);
+
+		obs_source_release(source);
+	}
+	obs_source_release(scene_as_source);
 }
 
 // Create function
@@ -28,6 +95,7 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 
 	hrs->source = source;
 	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
+	create_obs_heart_display_source_if_needed();
 
 	obs_log(LOG_INFO, "--------------END OF CREATE!!!!!");
 	return hrs;
@@ -93,12 +161,12 @@ void heart_rate_source_tick(void *data, float seconds)
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
-	
+
 	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
 	// Logic to update per frame
 }
 
-static void processBGRAData(struct input_BGRA_data *BGRA_data)
+static std::string processBGRAData(struct input_BGRA_data *BGRA_data)
 {
 	uint8_t *data = BGRA_data->data;
 	uint32_t width = BGRA_data->width;
@@ -125,8 +193,10 @@ static void processBGRAData(struct input_BGRA_data *BGRA_data)
 	double averageR = static_cast<double>(sumR) / pixel_count;
 	double averageA = static_cast<double>(sumA) / pixel_count;
 
-	obs_log(LOG_INFO, "Average B: %f, G: %f, R: %f, A: %f\n", averageB,
-		averageG, averageR, averageA);
+	std::ostringstream oss;
+	oss << "Average B: " << averageB << ", G: " << averageG
+	    << ", R: " << averageR << ", A: " << averageA;
+	return oss.str();
 }
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
@@ -295,7 +365,15 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	}
 
 	obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
-	processBGRAData(hrs->BGRA_data);
+	std::string result = processBGRAData(hrs->BGRA_data);
+
+	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
+	obs_data_t *source_settings = obs_source_get_settings(source);
+	obs_data_set_string(source_settings, "text", result.c_str());
+	obs_source_update(source, source_settings);
+	obs_data_release(source_settings);
+	obs_source_release(source);
+
 	obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	obs_source_skip_video_filter(hrs->source);
