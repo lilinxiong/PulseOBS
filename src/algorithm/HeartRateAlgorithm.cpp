@@ -1,3 +1,6 @@
+#include <obs-module.h>
+#include "plugin-support.h"
+#include "FaceDetection.h"
 #include "HeartRateAlgorithm.h"
 
 using namespace std;
@@ -56,20 +59,12 @@ std::vector<std::vector<bool>> skinkey) {
     // Iterate through the frame pixels using the key
     for (int i = 0; i < rgb.size(); ++i) {
         for (int j = 0; j < rgb[0].size(); ++j) {
-            if (skinkey.size() != 0) {
-                if (skinkey[i][j]) {
-                    sumR += get<0>(rgb[i][j]);
-                    sumG += get<1>(rgb[i][j]);
-                    sumB += get<2>(rgb[i][j]);
-                    count++;
-                }
-            } else {
+            if (skinkey[i][j]) {
                 sumR += get<0>(rgb[i][j]);
                 sumG += get<1>(rgb[i][j]);
                 sumB += get<2>(rgb[i][j]);
                 count++;
-            }
-            
+            }   
         }
     }
 
@@ -103,10 +98,9 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Ass
     }
 
     // We can ignore the face detection part and use the whole frame (all the pixels on the frame) for now
-    //std::vector<std::vector<bool>> skinKey = stddetectFacesAndCreateMask(BGRA_data);
-    std::vector<std::vector<bool>> skinKey(height, std::vetcor<bool>(width, true));
-    vector<double_t> averageRGBValues = average_keyed(rgb, skinkey);
-
+    std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+    // std::vector<std::vector<bool>> skinKey(height, std::vector<bool>(width, true));
+    vector<double_t> averageRGBValues = average_keyed(rgb, skinKey);
 
     frame_data.push_back(averageRGBValues);
 

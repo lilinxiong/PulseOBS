@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - plugin
+      - algorithm
     tags:
       - '*'
 permissions:

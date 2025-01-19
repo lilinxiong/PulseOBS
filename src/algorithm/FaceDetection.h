@@ -10,6 +10,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "heart_rate_source.h"
+
 std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *frame);
 
 #endif

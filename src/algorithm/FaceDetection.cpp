@@ -8,7 +8,7 @@ static bool cascade_loaded = false;
 // Ensure the face cascade is loaded once
 static void initializeFaceCascade() {
     if (!cascade_loaded) {
-        if (!face_cascade.load("haarcascade_frontalface_default.xml")) {
+        if (!face_cascade.load("C:/Users/Elizabeth Chan/Downloads/haarcascade_frontalface_default.xml")) {
             throw std::runtime_error("Error loading face cascade!");
         }
         cascade_loaded = true;
@@ -50,8 +50,8 @@ std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *
 
     // Mark pixels within detected face regions as true
     for (const auto &face : faces) {
-        for (int y = face.y; y < face.y + face.height && y < height; ++y) {
-            for (int x = face.x; x < face.x + face.width && x < width; ++x) {
+        for (int y = face.y; y < face.y + face.height && y < static_cast<int>(height); ++y) {
+            for (int x = face.x; x < face.x + face.width && x < static_cast<int>(width); ++x) {
                 face_mask[y][x] = true;
             }
         }
