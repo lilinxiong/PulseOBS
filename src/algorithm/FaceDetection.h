@@ -10,6 +10,6 @@
 #include <iostream>
 #include <stdexcept>
 
-std::vector<std::vector<bool>> detectFacesAndCreateMask(obs_source_frame *source, cv::CascadeClassifier &face_cascade);
+std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *frame);
 
 #endif

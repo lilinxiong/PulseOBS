@@ -3,17 +3,19 @@
 using namespace std;
 using namespace Eigen;
 
+
+// Calculating the moving average across a vector of frames
 vector<vector<double>> MovingAvg::moving_average(
-            const vector<vector<double>>& yuv,
+            const vector<vector<double>>& rgb,
             int n
         ) {
-    size_t width = yuv[0].size();
-    size_t height = yuv.size();
+    size_t width = rgb[0].size();
+    size_t height = rgb.size();
     // Convert the input vector to an Eigen matrix
     MatrixXd input(height, width);
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            input(i, j) = static_cast<double>(yuv[i][j]);
+            input(i, j) = static_cast<double>(rgb[i][j]);
         }
     }
 
@@ -44,26 +46,27 @@ vector<vector<double>> MovingAvg::moving_average(
 
 }
 
-        // TODO: Add skin key
-vector<double_t> MovingAvg::average_keyed(std::vector<std::vector<std::tuple<double, double, double>>> yuv, 
+
+// Calculating the average/mean RGB values of a frame
+vector<double_t> MovingAvg::average_keyed(std::vector<std::vector<std::tuple<double, double, double>>> rgb, 
 std::vector<std::vector<bool>> skinkey) {
-    double sumY = 0.0, sumU = 0.0, sumV = 0.0;
+    double sumR = 0.0, sumG = 0.0, sumB = 0.0;
     size_t count = 0;
 
     // Iterate through the frame pixels using the key
-    for (int i = 0; i < yuv.size(); ++i) {
-        for (int j = 0; j < yuv[0].size(); ++j) {
+    for (int i = 0; i < rgb.size(); ++i) {
+        for (int j = 0; j < rgb[0].size(); ++j) {
             if (skinkey.size() != 0) {
                 if (skinkey[i][j]) {
-                    sumY += get<0>(yuv[i][j]);
-                    sumU += get<1>(yuv[i][j]);
-                    sumV += get<2>(yuv[i][j]);
+                    sumR += get<0>(rgb[i][j]);
+                    sumG += get<1>(rgb[i][j]);
+                    sumB += get<2>(rgb[i][j]);
                     count++;
                 }
             } else {
-                sumY += get<0>(yuv[i][j]);
-                sumU += get<1>(yuv[i][j]);
-                sumV += get<2>(yuv[i][j]);
+                sumR += get<0>(rgb[i][j]);
+                sumG += get<1>(rgb[i][j]);
+                sumB += get<2>(rgb[i][j]);
                 count++;
             }
             
@@ -72,20 +75,44 @@ std::vector<std::vector<bool>> skinkey) {
 
     // Calculate averages
     if (count > 0) {
-        return {sumY / count, sumU / count, sumV / count};
+        return {sumR / count, sumG / count, sumB / count};
     } else {
         return {0.0, 0.0, 0.0}; // Handle the case where no pixels matched the key
     }
 }
 
 double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Assume frame in YUV format: struct obs_source_frame *source
-    uint8_t* rbg_values = BGRA_data->data;
-    frame_data.push_back(rbg_values);
+    uint8_t *data = BGRA_data->data;
+    uint32_t width = BGRA_data->width;
+    uint32_t height = BGRA_data->height;
+    uint32_t linesize = BGRA_data->linesize;
+    
+    uint32_t pixel_count = width * height;
+    // Create a 2D vector to store RGB tuples
+    std::vector<std::vector<std::tuple<double, double, double>>> rgb(height, std::vector<std::tuple<double, double, double>>(width));
+
+    for (uint32_t y = 0; y < height; ++y) {
+        for (uint32_t x = 0; x < width; ++x) {
+            uint8_t B = data[y * linesize + x * 4 + 0];
+            uint8_t G = data[y * linesize + x * 4 + 1];
+            uint8_t R = data[y * linesize + x * 4 + 2];
+
+            // Store as a tuple in the vector
+            rgb[y][x] = std::make_tuple(R, G, B);
+        }
+    }
+
+    // We can ignore the face detection part and use the whole frame (all the pixels on the frame) for now
+    //std::vector<std::vector<bool>> skinKey = stddetectFacesAndCreateMask(BGRA_data);
+    std::vector<std::vector<bool>> skinKey(height, std::vetcor<bool>(width, true));
+    vector<double_t> averageRGBValues = average_keyed(rgb, skinkey);
+
+
+    frame_data.push_back(averageRGBValues);
 
     if (frame_data.size() >= (fps * update_time)) { // Calculate heart rate when frame list "full"
-        vector<vector<double>> rgbValues; // Build this from frame data
             
-        std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(rgbValues); 
+        std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(frame_data); 
         
         std::vector<vector<double>> ppg_w_ma;
         for (auto& f: ppg_rgb_ma) {
@@ -102,27 +129,27 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Ass
 }
 
 // Function to magnify color
-std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<double>>& yuv, double delta, int n_bg_ma, int n_smooth_ma ) {
-    size_t height = yuv.size();
-    size_t width = yuv[0].size();
+std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<double>>& rgb, double delta, int n_bg_ma, int n_smooth_ma ) {
+    size_t height = rgb.size();
+    size_t width = rgb[0].size();
 
     // Return if one of the parameters are 0
     if (width == 0 || height == 0) return {};
 
     // Step 1: Remove slow-moving background component
-    vector<vector<double>> yuv_bg_ma = moving_average(yuv, n_bg_ma);
+    vector<vector<double>> rgb_bg_ma = moving_average(rgb, n_bg_ma);
     
-    vector<vector<double>> yuv_detrended(height, vector<double>(width));
+    vector<vector<double>> rgb_detrended(height, vector<double>(width));
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {                   
             // Subtract the values
-            yuv_detrended[i][j] = yuv[i][j] - yuv_bg_ma[i][j];
+            rgb_detrended[i][j] = rgb[i][j] - rgb_bg_ma[i][j];
         }
     }
 
 
     // Step 2: Smooth the resulting PPG
-    vector<vector<double>> ppg_smoothed = moving_average(yuv_detrended, n_smooth_ma);
+    vector<vector<double>> ppg_smoothed = moving_average(rgb_detrended, n_smooth_ma);
 
     // Step 3: Remove NaNs (replace with 0)
     // Not necessray as we are working with uint8_t types which cannot be non-numbers

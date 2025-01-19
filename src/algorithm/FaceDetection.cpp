@@ -16,7 +16,7 @@ static void initializeFaceCascade() {
 }
 
 // Function to detect faces and create a mask
-std::vector<std::vector<bool>> detectFacesAndCreateMask(BGRA_data *frame) {
+std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *frame) {
     if (!frame || !frame->data) {
         throw std::runtime_error("Invalid BGRA frame data!");
     }
