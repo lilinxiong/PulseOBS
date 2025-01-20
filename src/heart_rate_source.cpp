@@ -96,7 +96,7 @@ void heart_rate_source_tick(void *data, float seconds)
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
-	
+
 	//obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
 	// Logic to update per frame
 }
@@ -137,7 +137,6 @@ static void processBGRAData(struct input_BGRA_data *BGRA_data)
 
 	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
 	// number multiple times (shouldn't affect plugin)
-
 }
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
