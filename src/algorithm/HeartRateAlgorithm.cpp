@@ -163,6 +163,16 @@ double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>>& b
         fft_result[k] = sum;
     }
 
+    // Apply frequency-domain filtering
+    double lower_cutoff_hz = 30.0 / 60.0; // ~40 BPM
+    double upper_cutoff_hz = 200.0 / 60.0; // ~200 BPM
+    for (int k = 0; k < num_data_points; ++k) {
+        double freq = k * (fps / num_data_points);
+        if (freq < lower_cutoff_hz || freq > upper_cutoff_hz) {
+            fft_result[k] = 0; // Remove frequencies outside the range
+        }
+    }
+
     // Compute power spectrum
     int nyquist_limit = num_data_points / 2;
     ArrayXd power_spectrum = ArrayXd::Zero(nyquist_limit + 1); // Only half the spectrum (0 to Nyquist frequency)
@@ -214,8 +224,8 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Ass
     }
 
     // uncomment this when face detect fixed and add to next line as param
-    //std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
-    vector<double_t> averageRGBValues = average_keyed(rgb);
+    std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+    vector<double_t> averageRGBValues = average_keyed(rgb, skinKey);
 
     frame_data.push_back(averageRGBValues);
 
