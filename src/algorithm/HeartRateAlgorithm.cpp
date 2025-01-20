@@ -59,12 +59,21 @@ std::vector<std::vector<bool>> skinkey) {
     // Iterate through the frame pixels using the key
     for (int i = 0; i < rgb.size(); ++i) {
         for (int j = 0; j < rgb[0].size(); ++j) {
-            if (skinkey[i][j]) {
+            // remove this when face detect fixed
+            if (skinkey.empty()) {
                 sumR += get<0>(rgb[i][j]);
                 sumG += get<1>(rgb[i][j]);
                 sumB += get<2>(rgb[i][j]);
                 count++;
-            }   
+            } else {
+                if (skinkey[i][j]) {
+                    sumR += get<0>(rgb[i][j]);
+                    sumG += get<1>(rgb[i][j]);
+                    sumB += get<2>(rgb[i][j]);
+                    count++;
+                }
+            }
+            
         }
     }
 
@@ -97,10 +106,9 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Ass
         }
     }
 
-    // We can ignore the face detection part and use the whole frame (all the pixels on the frame) for now
-    std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
-    // std::vector<std::vector<bool>> skinKey(height, std::vector<bool>(width, true));
-    vector<double_t> averageRGBValues = average_keyed(rgb, skinKey);
+    // uncomment this when face detect fixed and add to next line as param
+    // std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+    vector<double_t> averageRGBValues = average_keyed(rgb);
 
     frame_data.push_back(averageRGBValues);
 
@@ -173,11 +181,14 @@ std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<dou
 double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft) {
     using Eigen::ArrayXd;
 
-    int num_estimators = static_cast<int>(bvps.size());
-    int num_frames = static_cast<int>(bvps[0].size());
+    int num_estimators = static_cast<int>(bvps[0].size());
+    int num_frames = static_cast<int>(bvps.size());
 
     // Define segment size and overlap
     int segment_size = nfft;
+    if (segment_size > num_frames) {
+        segment_size = num_frames;
+    }
     int overlap = nfft / 2; // 50% overlap
 
     // Hann window
@@ -244,6 +255,8 @@ double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>>& b
 
     // Finalize average PSD across all estimators
     avg_psd /= num_estimators;
+
+
 
     // Find the frequency with the maximum average PSD
     int max_index;

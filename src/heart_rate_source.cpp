@@ -97,7 +97,7 @@ void heart_rate_source_tick(void *data, float seconds)
 		return;
 	}
 	
-	obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
+	//obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
 	// Logic to update per frame
 }
 
@@ -132,6 +132,8 @@ static void processBGRAData(struct input_BGRA_data *BGRA_data)
 	// 	averageG, averageR, averageA);
 
 	double heart_rate = avg.calculateHeartRate(BGRA_data);
+	std::string log = "Heart Rate: " + std::to_string(heart_rate);
+	obs_log(LOG_INFO, log.c_str());
 
 	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
 	// number multiple times (shouldn't affect plugin)
@@ -140,7 +142,7 @@ static void processBGRAData(struct input_BGRA_data *BGRA_data)
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 {
-	obs_log(LOG_INFO, "--------BGRASTART!!!!!!!!");
+	//obs_log(LOG_INFO, "--------BGRASTART!!!!!!!!");
 	uint32_t width;
 	uint32_t height;
 
@@ -149,7 +151,7 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	obs_log(LOG_INFO, "--------RETRIEVING TARGET SOURCE!!!!!!!!");
+	//obs_log(LOG_INFO, "--------RETRIEVING TARGET SOURCE!!!!!!!!");
 
 	// Retrieve the target source of the filter
 	obs_source_t *target = obs_filter_get_target(hrs->source);
@@ -157,8 +159,8 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	obs_log(LOG_INFO,
-		"--------RETRIEVING BASE DIMENSIONS OF TARGET SOURCE!!!!!!!!");
+	//obs_log(LOG_INFO,
+	//	"--------RETRIEVING BASE DIMENSIONS OF TARGET SOURCE!!!!!!!!");
 
 	// Retrieve the base dimensions of the target source
 	width = obs_source_get_base_width(target);
@@ -167,7 +169,7 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	obs_log(LOG_INFO, "--------RESETTING THE TEXTURE RENDERER!!!!!!!!");
+	//obs_log(LOG_INFO, "--------RESETTING THE TEXTURE RENDERER!!!!!!!!");
 
 	// Resets the texture renderer and begins rendering with the specified width and height
 	gs_texrender_reset(hrs->texrender);
@@ -179,8 +181,8 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	obs_log(LOG_INFO,
-		"--------FINISHED RESETTING THE TEXTURE RENDERER!!!!!!!!");
+	//obs_log(LOG_INFO,
+	//	"--------FINISHED RESETTING THE TEXTURE RENDERER!!!!!!!!");
 
 	// Clear up and set up rendering
 	// - Clears the rendering surface with a zeroed background
@@ -283,7 +285,7 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 {
 	UNUSED_PARAMETER(effect);
 
-	obs_log(LOG_INFO, "--------------Start of RENDER!!!!!!!!!");
+	//obs_log(LOG_INFO, "--------------Start of RENDER!!!!!!!!!");
 	struct heart_rate_source *hrs =
 		reinterpret_cast<struct heart_rate_source *>(data);
 
@@ -298,14 +300,14 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	}
 
 	if (!getBGRAFromStageSurface(hrs)) {
-		obs_log(LOG_INFO, "--------BGRA FAIL!!!!!!!!");
+		//obs_log(LOG_INFO, "--------BGRA FAIL!!!!!!!!");
 		obs_source_skip_video_filter(hrs->source);
 		return;
 	}
 
-	obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
+	//obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
 	processBGRAData(hrs->BGRA_data);
-	obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
+	//obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	obs_source_skip_video_filter(hrs->source);
 }
