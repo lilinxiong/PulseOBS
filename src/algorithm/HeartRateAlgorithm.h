@@ -34,7 +34,7 @@ class MovingAvg {
         std::vector<std::vector<double>> magnify_colour_ma(const std::vector<std::vector<double>>& rgb,
          double delta = 50, int n_bg_ma = 60, int n_smooth_ma = 3);
 
-        double Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft = 16);
+        double Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int num_data_points, int nfft = 16);
 
     public:
         double calculateHeartRate(struct input_BGRA_data *BGRA_data);

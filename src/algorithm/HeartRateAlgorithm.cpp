@@ -2,10 +2,11 @@
 #include "plugin-support.h"
 #include "FaceDetection.h"
 #include "HeartRateAlgorithm.h"
+#include <fstream>
+#include <string>
 
 using namespace std;
 using namespace Eigen;
-
 
 // Calculating the moving average across a vector of frames
 vector<vector<double>> MovingAvg::moving_average(
@@ -85,51 +86,6 @@ std::vector<std::vector<bool>> skinkey) {
     }
 }
 
-double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Assume frame in YUV format: struct obs_source_frame *source
-    uint8_t *data = BGRA_data->data;
-    uint32_t width = BGRA_data->width;
-    uint32_t height = BGRA_data->height;
-    uint32_t linesize = BGRA_data->linesize;
-    
-    uint32_t pixel_count = width * height;
-    // Create a 2D vector to store RGB tuples
-    std::vector<std::vector<std::tuple<double, double, double>>> rgb(height, std::vector<std::tuple<double, double, double>>(width));
-
-    for (uint32_t y = 0; y < height; ++y) {
-        for (uint32_t x = 0; x < width; ++x) {
-            uint8_t B = data[y * linesize + x * 4 + 0];
-            uint8_t G = data[y * linesize + x * 4 + 1];
-            uint8_t R = data[y * linesize + x * 4 + 2];
-
-            // Store as a tuple in the vector
-            rgb[y][x] = std::make_tuple(R, G, B);
-        }
-    }
-
-    // uncomment this when face detect fixed and add to next line as param
-    // std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
-    vector<double_t> averageRGBValues = average_keyed(rgb);
-
-    frame_data.push_back(averageRGBValues);
-
-    if (frame_data.size() >= (fps * update_time)) { // Calculate heart rate when frame list "full"
-            
-        std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(frame_data); 
-        
-        std::vector<vector<double>> ppg_w_ma;
-        for (auto& f: ppg_rgb_ma) {
-            std::vector<double> avg; 
-            avg.push_back((f[0] + f[1] + f[2]) / 3);
-            ppg_w_ma.push_back(avg);
-        }
-
-        frame_data = {}; // Naive approach - can change but just for simplicity
-        prev_hr = Welch_cpu_heart_rate(ppg_w_ma, 60);
-    }
-
-    return prev_hr;
-}
-
 // Function to magnify color
 std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<double>>& rgb, double delta, int n_bg_ma, int n_smooth_ma ) {
     size_t height = rgb.size();
@@ -178,89 +134,105 @@ std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<dou
     return ppg_smoothed; 
 }
         
-double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int nfft) {
+double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>>& bvps, double fps, int num_data_points, int nfft) {
     using Eigen::ArrayXd;
 
-    int num_estimators = static_cast<int>(bvps[0].size());
-    int num_frames = static_cast<int>(bvps.size());
+    double frequency_resolution = (fps * 60.0) / num_data_points;
 
-    // Define segment size and overlap
-    int segment_size = nfft;
-    if (segment_size > num_frames) {
-        segment_size = num_frames;
-    }
-    int overlap = nfft / 2; // 50% overlap
-
-    // Hann window
-    ArrayXd hann_window(segment_size);
-    for (int i = 0; i < segment_size; ++i) {
-        hann_window[i] = 0.5 * (1 - std::cos(2 * M_PI * i / (segment_size - 1)));
+    // Convert input to a single signal by averaging RGB channels
+    ArrayXd signal(num_data_points);
+    for (int i = 0; i < num_data_points; ++i) {
+        signal[i] = (bvps[i][0] + bvps[i][1] + bvps[i][2]) / 3.0;
     }
 
-    // Frequencies
-    ArrayXd frequencies = ArrayXd::LinSpaced(nfft / 2 + 1, 0, fps / 2);
+    // Apply Hann window
+    ArrayXd hann_window(num_data_points);
+    for (int i = 0; i < num_data_points; ++i) {
+        hann_window[i] = 0.5 * (1 - std::cos(2 * M_PI * i / (num_data_points - 1)));
+    }
+    ArrayXd windowed_signal = signal * hann_window;
 
-    // Initialize average PSD
-    ArrayXd avg_psd = ArrayXd::Zero(nfft / 2 + 1);
-
-    // Function to compute DFT manually
-    auto computeDFT = [](const ArrayXd& input) -> Eigen::ArrayXcd {
-        int N = static_cast<int>(input.size());
-        Eigen::ArrayXcd output(N);
-
-        for (int k = 0; k < N; ++k) {
-            std::complex<double> sum(0.0, 0.0);
-            for (int n = 0; n < N; ++n) {
-                double angle = -2.0 * M_PI * k * n / N;
-                sum += input[n] * std::exp(std::complex<double>(0, angle));
-            }
-            output[k] = sum;
+    // Compute DFT manually
+    Eigen::ArrayXcd fft_result(num_data_points);
+    for (int k = 0; k < num_data_points; ++k) {
+        std::complex<double> sum(0.0, 0.0);
+        for (int n = 0; n < num_data_points; ++n) {
+            double angle = -2.0 * M_PI * k * n / num_data_points;
+            sum += windowed_signal[n] * std::exp(std::complex<double>(0, angle));
         }
-
-        return output;
-    };
-
-    // Iterate over all estimators
-    for (const auto& bvp : bvps) {
-        // Convert signal to Eigen array
-        ArrayXd signal = Eigen::Map<const ArrayXd>(bvp.data(), bvp.size());
-
-        // Divide signal into overlapping segments
-        int num_segments = 0;
-        ArrayXd psd = ArrayXd::Zero(nfft / 2 + 1);
-
-        for (int start = 0; start + segment_size <= num_frames; start += (segment_size - overlap)) {
-            // Extract segment and apply window
-            ArrayXd segment = signal.segment(start, segment_size) * hann_window;
-
-            // Compute DFT
-            Eigen::ArrayXcd fft_result = computeDFT(segment);
-
-            // Compute power spectrum
-            for (int k = 0; k <= nfft / 2; ++k) {
-                psd[k] += std::norm(fft_result[k]) / (segment_size * fps);
-            }
-
-            ++num_segments;
-        }
-
-        // Average PSD for this estimator
-        if (num_segments > 0) {
-            psd /= num_segments;
-        }
-
-        // Accumulate into the overall average PSD
-        avg_psd += psd;
+        fft_result[k] = sum;
     }
 
-    // Finalize average PSD across all estimators
-    avg_psd /= num_estimators;
+    // Compute power spectrum
+    int nyquist_limit = num_data_points / 2;
+    ArrayXd power_spectrum = ArrayXd::Zero(nyquist_limit + 1); // Only half the spectrum (0 to Nyquist frequency)
+    for (int k = 0; k <= nyquist_limit; ++k) {
+        power_spectrum[k] = std::norm(fft_result[k]) / num_data_points;
+    }
 
+    // Adjust Nyquist limit for human heart rates
+    int nyquist_limit_bpm = std::min(nyquist_limit, static_cast<int>(200 / frequency_resolution));
 
+    // Log power spectrum to OBS console in BPM
+    std::ostringstream log_stream;
+    for (int k = 0; k <= nyquist_limit_bpm; ++k) {
+        double bpm = k * frequency_resolution;
+        log_stream << bpm << " BPM: " << power_spectrum[k];
+        if (k < nyquist_limit_bpm) {
+            log_stream << ", ";
+        }
+    }
+    obs_log(LOG_INFO, "%s", log_stream.str().c_str());
 
-    // Find the frequency with the maximum average PSD
+    // Find dominant frequency in BPM
     int max_index;
-    avg_psd.maxCoeff(&max_index);
+    power_spectrum.head(nyquist_limit_bpm + 1).maxCoeff(&max_index);
+    double dominant_frequency = max_index * frequency_resolution;
 
-    return frequencies[max_index];
+    return dominant_frequency;
+}
+
+double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data) { // Assume frame in YUV format: struct obs_source_frame *source
+    uint8_t *data = BGRA_data->data;
+    uint32_t width = BGRA_data->width;
+    uint32_t height = BGRA_data->height;
+    uint32_t linesize = BGRA_data->linesize;
+    
+    uint32_t pixel_count = width * height;
+    // Create a 2D vector to store RGB tuples
+    std::vector<std::vector<std::tuple<double, double, double>>> rgb(height, std::vector<std::tuple<double, double, double>>(width));
+
+    for (uint32_t y = 0; y < height; ++y) {
+        for (uint32_t x = 0; x < width; ++x) {
+            uint8_t B = data[y * linesize + x * 4 + 0];
+            uint8_t G = data[y * linesize + x * 4 + 1];
+            uint8_t R = data[y * linesize + x * 4 + 2];
+
+            // Store as a tuple in the vector
+            rgb[y][x] = std::make_tuple(R, G, B);
+        }
+    }
+
+    // uncomment this when face detect fixed and add to next line as param
+    //std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+    vector<double_t> averageRGBValues = average_keyed(rgb);
+
+    frame_data.push_back(averageRGBValues);
+
+    if (frame_data.size() >= (fps * update_time)) { // Calculate heart rate when frame list "full"
+            
+        std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(frame_data); 
+        
+        std::vector<vector<double>> ppg_w_ma;
+        for (auto& f: ppg_rgb_ma) {
+            std::vector<double> avg; 
+            avg.push_back((f[0] + f[1] + f[2]) / 3);
+            ppg_w_ma.push_back(avg);
+        }
+
+        frame_data = {}; // Naive approach - can change but just for simplicity
+        prev_hr = Welch_cpu_heart_rate(ppg_w_ma, fps, (int)fps * (int)update_time);
+    }
+
+    return prev_hr;
 }
