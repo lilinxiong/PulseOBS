@@ -1,6 +1,6 @@
 function Install-Winget {
     Log-Status "Installing Winget"
-    Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/download/v1.1.12653/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile winget.msixbundle
+    Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/download/v1.10.40-preview/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile winget.msixbundle
     Add-AppxPackage -Path winget.msixbundle
 }
 
