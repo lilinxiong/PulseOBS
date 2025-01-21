@@ -1,7 +1,8 @@
 function Install-Winget {
     Log-Status "Installing Winget"
-    Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/download/v1.10.40-preview/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile winget.msixbundle
-    Add-AppxPackage -Path winget.msixbundle
+    wget https://github.com/microsoft/winget-cli/releases/download/v1.1.12653/Microsoft.Winget.Source.zip -O winget.zip
+    Expand-Archive -Path winget.zip -DestinationPath $env:USERPROFILE\winget
+    $env:PATH += ";$env:USERPROFILE\winget"
 }
 
 function Install-BuildDependencies {
