@@ -16,8 +16,7 @@ add_library(${CMAKE_PROJECT_NAME} MODULE)
 find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
-# find_package(Eigen3 REQUIRED)
-set(EIGEN3_INCLUDE_DIR "C:/ProgramData/chocolatey/lib")
+find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Eigen3::Eigen)
 
