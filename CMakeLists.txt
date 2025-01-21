@@ -20,9 +20,11 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Eigen3::Eigen)
 
-set(OpenCV_DIR "C:/tools/opencv/build")
-set(OpenCV_INCLUDE_DIR "C:/tools/opencv/build/include")
-set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
+if(WIN32)
+  set(OpenCV_DIR "C:/tools/opencv/build")
+  set(OpenCV_INCLUDE_DIR "C:/tools/opencv/build/include")
+  set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
+endif()
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIR})
 link_directories(${OpenCV_LIBRARIES})
@@ -49,6 +51,5 @@ endif()
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.cpp src/heart_rate_source.cpp src/heart_rate_source_info.c)
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/algorithm/HeartRateAlgorithm.cpp src/algorithm/FaceDetection.cpp)
-
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
