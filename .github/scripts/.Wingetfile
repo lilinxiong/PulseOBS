@@ -1,3 +1,4 @@
 package 'cmake', path: 'Cmake\bin', bin: 'cmake'
 package 'innosetup', path: 'Inno Setup 6', bin: 'iscc'
 package 'eigen', path: 'Eigen\bin', bin: 'eigen'
+package 'opencv', path: 'OpenCV\bin', bin: 'opencv'
