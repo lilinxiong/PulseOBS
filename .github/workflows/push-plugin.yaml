@@ -5,6 +5,7 @@ on:
     branches:
       - plugin
       - algorithm
+      - install-dependencies
     tags:
       - '*'
 permissions:
