@@ -8,15 +8,18 @@ static bool cascade_loaded = false;
 static void initializeFaceCascade()
 {
 	if (!cascade_loaded) {
-		char *cascade_path = obs_find_module_file(
+		char *cascade_path = obs_find_module_file(obs_get_module("pulse-obs"),
 			"haarcascade_frontalface_default.xml");
 		if (!cascade_path) {
-			throw std::runtime_error(
+			obs_log(LOG_INFO,
+				"Error finding face cascade file!");
+      throw std::runtime_error(
 				"Error finding face cascade file!");
 		}
 
 		if (!face_cascade.load(cascade_path)) {
-			throw std::runtime_error("Error loading face cascade!");
+			obs_log(LOG_INFO, "Error loading face cascade!");
+      throw std::runtime_error("Error loading face cascade!");
 		}
 
 		bfree(cascade_path);
