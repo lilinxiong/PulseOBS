@@ -25,6 +25,9 @@ if(WIN32)
   set(OpenCV_INCLUDE_DIR "C:/tools/opencv/build/include")
   set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
 endif()
+
+add_definitions(-DNO=)
+
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIR})
 link_directories(${OpenCV_LIBRARIES})
