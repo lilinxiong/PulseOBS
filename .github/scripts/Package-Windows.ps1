@@ -72,7 +72,7 @@ function Package {
         Verbose = ($Env:CI -ne $null)
     }
 
-    Write-Verbose "Debug: Compress-Archive @CompressArgs Start"
+    Log-Information "Debug: Compress-Archive @CompressArgs Start"
     try {
         Compress-Archive -Force @CompressArgs
     } catch {
@@ -81,9 +81,9 @@ function Package {
     }
     Log-Group
 
-    Write-Verbose "Debug: Packaging ${ProductName}..."
+    Log-Information "Debug: Packaging ${ProductName}..."
     if ( ( $BuildInstaller ) ) {
-        Write-Verbose "Debug: Packaging ${ProductName} with installer..."
+        Log-Information "Debug: Packaging ${ProductName} with installer..."
         Log-Group "Packaging ${ProductName}..."
 
         $IsccFile = "${ProjectRoot}/build_${Target}/installer-Windows.generated.iss"
@@ -101,7 +101,7 @@ function Package {
 
         Log-Group
     }
-    Write-Verbose "Debug: Packaging ${ProductName}... Done"
+    Log-Information "Debug: Packaging ${ProductName}... Done"
 }
 
 Package
