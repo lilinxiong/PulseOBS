@@ -15,7 +15,7 @@ function Install-Winget {
             Install-Choco
         }
 
-        choco install microsoft-windows-appinstaller -y
+        choco install winget-cli --version=1.6.2771
     }
     
     Log-Status "Verifying Winget installation"
