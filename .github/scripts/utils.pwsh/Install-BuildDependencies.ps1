@@ -1,8 +1,30 @@
-function Install-Winget {
-    Log-Status "Installing Winget"
-    Invoke-WebRequest https://raw.githubusercontent.com/asheroto/winget-installer/master/winget-install.ps1 -UseBasicParsing | iex
+function Install-Choco {
+    Log-Status "Installing Chocolatey"
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-WebRequest https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
 }
 
+function Install-Winget {
+    Log-Status "Installing Winget"
+
+    if (-not (Get-Command -ErrorAction SilentlyContinue winget)) {
+        Log-Status "Winget not found, installing via Chocolatey"
+        
+        if (-not (Get-Command -ErrorAction SilentlyContinue choco)) {
+            Install-Choco
+        }
+
+        choco install microsoft-windows-appinstaller -y
+    }
+    
+    Log-Status "Verifying Winget installation"
+    if (Get-Command -ErrorAction SilentlyContinue winget) {
+        Log-Status "Winget installed successfully"
+    } else {
+        throw "Winget installation failed"
+    }
+}
 
 function Install-BuildDependencies {
     <#
