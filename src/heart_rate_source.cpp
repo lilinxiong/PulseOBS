@@ -203,6 +203,7 @@ static std::string processBGRAData(struct input_BGRA_data *BGRA_data)
 	double heart_rate = avg.calculateHeartRate(BGRA_data);
 	std::string log = "Heart Rate: " + std::to_string(heart_rate);
 	obs_log(LOG_INFO, log.c_str());
+	return log;
 
 	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
 	// number multiple times (shouldn't affect plugin)
