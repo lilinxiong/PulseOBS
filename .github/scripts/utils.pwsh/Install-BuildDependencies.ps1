@@ -70,7 +70,7 @@ function Install-BuildDependencies {
                     Install-Winget
                 }
 
-                ./wget.exe @Params
+                winget @Params
             } catch {
                 throw "Error while installing winget package ${Package}: $_"
             }
