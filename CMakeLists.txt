@@ -28,11 +28,12 @@ endif()
 
 set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/3rdparty/binary/opencv-macos/lib/cmake/opencv4)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
 
 if (OpenCV_FOUND)
   message("OpenCV_FOUND:${OpenCV_FOUND}")
-  message("OpenCV_INCLUDE_DIR:${OpenCV_INCLUDE_DIR}")
+  message("OpenCV_VERSION:${OpenCV_VERSION}")
+  message("OpenCV_INCLUDE_DIRS:${OpenCV_INCLUDE_DIRS}")
   message("OpenCV_LIBRARIES:${OpenCV_LIBRARIES}")
 endif ()
 
