@@ -271,6 +271,8 @@ jobs:
 
       - name: Package Plugin 📀
         uses: ./.github/actions/package-plugin
+        env: 
+          ACTIONS_STEP_DEBUG: 'true'
         with:
           target: x64
           config: ${{ needs.check-event.outputs.config }}
