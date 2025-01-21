@@ -4,7 +4,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCO
 
 project(${_name} VERSION ${_version})
 
-option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" OFF)
+option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" ON)
 option(ENABLE_QT "Use Qt functionality" OFF)
 
 include(compilerconfig)
@@ -15,6 +15,23 @@ add_library(${CMAKE_PROJECT_NAME} MODULE)
 
 find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
+
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Eigen3::Eigen)
+
+if(WIN32)
+  set(OpenCV_DIR "C:/tools/opencv/build")
+  set(OpenCV_INCLUDE_DIR "C:/tools/opencv/build/include")
+  set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
+endif()
+
+add_definitions(-DNO=)
+
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIR})
+link_directories(${OpenCV_LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBRARIES})
 
 if(ENABLE_FRONTEND_API)
   find_package(obs-frontend-api REQUIRED)
@@ -34,6 +51,7 @@ if(ENABLE_QT)
                AUTORCC ON)
 endif()
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin/plugin-main.cpp)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/algorithm/FaceDetection.cpp src/algorithm/HeartRateAlgorithm.cpp
+                                             src/plugin-main.cpp src/heart_rate_source.cpp src/heart_rate_source_info.c)
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

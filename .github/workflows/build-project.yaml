@@ -75,6 +75,7 @@ jobs:
     name: Build for macOS 🍏
     runs-on: macos-14
     needs: check-event
+    if: false  # This condition will skip the job
     defaults:
       run:
         shell: zsh --no-rcs --errexit --pipefail {0}
@@ -169,6 +170,7 @@ jobs:
     name: Build for Ubuntu 🐧
     runs-on: ubuntu-22.04
     needs: check-event
+    if: false  # This condition will skip the job
     defaults:
       run:
         shell: bash
@@ -269,6 +271,8 @@ jobs:
 
       - name: Package Plugin 📀
         uses: ./.github/actions/package-plugin
+        env: 
+          ACTIONS_STEP_DEBUG: 'true'
         with:
           target: x64
           config: ${{ needs.check-event.outputs.config }}

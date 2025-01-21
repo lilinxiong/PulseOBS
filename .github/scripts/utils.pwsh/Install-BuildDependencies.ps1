@@ -1,3 +1,10 @@
+function Install-Choco {
+    Log-Status "Installing Chocolatey"
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-WebRequest https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
+}
+
 function Install-BuildDependencies {
     <#
         .SYNOPSIS
@@ -60,11 +67,23 @@ function Install-BuildDependencies {
             try {
                 $Params = $WingetOptions + $Package
 
+                if (-not (Get-Command -ErrorAction SilentlyContinue choco)) {
+                    Install-Choco
+                }
+
                 winget @Params
             } catch {
                 throw "Error while installing winget package ${Package}: $_"
             }
         }
     }
+
+    Log-Group "Try install build dependencies using choco"
+
+    choco install eigen -y
+    choco list --local-only eigen
+    choco install opencv -y
+    choco list --local-only opencv
+    
     Log-Group
 }

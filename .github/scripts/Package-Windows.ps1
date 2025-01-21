@@ -71,10 +71,20 @@ function Package {
         DestinationPath = "${ProjectRoot}/release/${OutputName}.zip"
         Verbose = ($Env:CI -ne $null)
     }
-    Compress-Archive -Force @CompressArgs
+
+    Log-Information "Debug: Compress-Archive @CompressArgs Start"
+    try {
+        Compress-Archive -Force @CompressArgs
+    } catch {
+        Write-Error $_
+        exit 2
+    }
     Log-Group
 
+    Log-Information "Debug: Packaging ${ProductName}..."
+    Log-Information "Debug: the build installer flag is set to ${BuildInstaller}"
     if ( ( $BuildInstaller ) ) {
+        Log-Information "Debug: Packaging ${ProductName} with installer..."
         Log-Group "Packaging ${ProductName}..."
 
         $IsccFile = "${ProjectRoot}/build_${Target}/installer-Windows.generated.iss"
@@ -92,6 +102,7 @@ function Package {
 
         Log-Group
     }
+    Log-Information "Debug: Packaging ${ProductName}... Done"
 }
 
 Package
