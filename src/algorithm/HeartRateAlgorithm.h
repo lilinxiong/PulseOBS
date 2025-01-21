@@ -19,6 +19,7 @@ class MovingAvg {
 private:
 	double fps = 60.0;
 	double update_time = 2.0; // Time between heart rate updates in secs
+	int maxBufSize = 60;
 	double prev_hr = 0.0;
 	std::vector<std::vector<double>> frame_data =
 		{}; // Store the average RGB values for each frame
