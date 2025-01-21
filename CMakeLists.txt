@@ -26,9 +26,16 @@ if(WIN32)
   set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
 endif()
 
-add_definitions(-DNO=)
+set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/3rdparty/binary/opencv-macos/lib/cmake/opencv4)
 
 find_package(OpenCV REQUIRED)
+
+if (OpenCV_FOUND)
+  message("OpenCV_FOUND:${OpenCV_FOUND}")
+  message("OpenCV_INCLUDE_DIR:${OpenCV_INCLUDE_DIR}")
+  message("OpenCV_LIBRARIES:${OpenCV_LIBRARIES}")
+endif ()
+
 include_directories(${OpenCV_INCLUDE_DIR})
 link_directories(${OpenCV_LIBRARIES})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBRARIES})
