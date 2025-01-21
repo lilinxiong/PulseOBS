@@ -16,11 +16,13 @@ add_library(${CMAKE_PROJECT_NAME} MODULE)
 find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
-find_package(Eigen3 REQUIRED)
+# find_package(Eigen3 REQUIRED)
+set(EIGEN3_INCLUDE_DIR "C:/ProgramData/chocolatey/lib")
 include_directories(${EIGEN3_INCLUDE_DIR})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Eigen3::Eigen)
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
+set(OpenCV_INCLUDE_DIR "C:/tools")
 include_directories(${OpenCV_INCLUDE_DIR})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBRARIES})
 
