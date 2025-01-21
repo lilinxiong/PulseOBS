@@ -5,27 +5,6 @@ function Install-Choco {
     Invoke-WebRequest https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
 }
 
-function Install-Winget {
-    Log-Status "Installing Winget"
-
-    if (-not (Get-Command -ErrorAction SilentlyContinue winget)) {
-        Log-Status "Winget not found, installing via Chocolatey"
-        
-        if (-not (Get-Command -ErrorAction SilentlyContinue choco)) {
-            Install-Choco
-        }
-
-        choco install winget-cli --version=1.6.2771
-    }
-    
-    Log-Status "Verifying Winget installation"
-    if (Get-Command -ErrorAction SilentlyContinue winget) {
-        Log-Status "Winget installed successfully"
-    } else {
-        throw "Winget installation failed"
-    }
-}
-
 function Install-BuildDependencies {
     <#
         .SYNOPSIS
@@ -88,11 +67,13 @@ function Install-BuildDependencies {
             try {
                 $Params = $WingetOptions + $Package
 
-                if (-not (Get-Command -ErrorAction SilentlyContinue winget)) {
-                    Install-Winget
+                if (-not (Get-Command -ErrorAction SilentlyContinue choco)) {
+                    Install-Choco
                 }
 
                 winget @Params
+                choco install eigen -y
+                choco install opencv -y
             } catch {
                 throw "Error while installing winget package ${Package}: $_"
             }
