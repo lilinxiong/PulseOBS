@@ -1,3 +1,5 @@
+#include "algorithm/HeartRateAlgorithm.h"
+
 #include <obs-module.h>
 #include <obs.h>
 #include <obs-frontend-api.h>
@@ -8,7 +10,6 @@
 #include <vector>
 #include "plugin-support.h"
 #include "heart_rate_source.h"
-#include "algorithm/HeartRateAlgorithm.h"
 
 MovingAvg avg;
 

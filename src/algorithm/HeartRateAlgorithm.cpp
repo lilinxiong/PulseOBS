@@ -1,6 +1,6 @@
+#include "FaceDetection.h"
 #include <obs-module.h>
 #include "plugin-support.h"
-#include "FaceDetection.h"
 #include "HeartRateAlgorithm.h"
 #include <fstream>
 #include <string>
@@ -12,8 +12,8 @@ using namespace Eigen;
 vector<vector<double>>
 MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
 {
-	size_t width = rgb[0].size();
-	size_t height = rgb.size();
+	int width = static_cast<int>(rgb[0].size());
+	int height = static_cast<int>(rgb.size());
 	// Convert the input vector to an Eigen matrix
 	MatrixXd input(height, width);
 	for (int i = 0; i < height; ++i) {
@@ -26,8 +26,8 @@ MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
 	MatrixXd output = MatrixXd::Zero(height, width);
 
 	// Apply moving average using a sliding window
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
+	for (int i = 0; i < static_cast<int>(height); ++i) {
+		for (int j = 0; j < static_cast<int>(width); ++j) {
 			// Calculate the row range for the moving average
 			int start_row = max(0, i - n / 2);
 			int end_row =
@@ -60,8 +60,8 @@ vector<double_t> MovingAvg::average_keyed(
 	size_t count = 0;
 
 	// Iterate through the frame pixels using the key
-	for (int i = 0; i < rgb.size(); ++i) {
-		for (int j = 0; j < rgb[0].size(); ++j) {
+	for (int i = 0; i < static_cast<int>(rgb.size()); ++i) {
+		for (int j = 0; j < static_cast<int>(rgb[0].size()); ++j) {
 			// remove this when face detect fixed
 			if (skinkey.empty()) {
 				sumR += get<0>(rgb[i][j]);
@@ -93,8 +93,8 @@ std::vector<vector<double>>
 MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 			     int n_bg_ma, int n_smooth_ma)
 {
-	size_t height = rgb.size();
-	size_t width = rgb[0].size();
+	int height = static_cast<int>(rgb.size());
+	int width = static_cast<int>(rgb[0].size());
 
 	// Return if one of the parameters are 0
 	if (width == 0 || height == 0)
@@ -145,7 +145,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 
 double
 MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
-				double fps, int num_data_points, int nfft)
+				double fps, int num_data_points)
 {
 
 	using Eigen::ArrayXd;
@@ -228,7 +228,6 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 	uint32_t height = BGRA_data->height;
 	uint32_t linesize = BGRA_data->linesize;
 
-	uint32_t pixel_count = width * height;
 	// Create a 2D vector to store RGB tuples
 	std::vector<std::vector<std::tuple<double, double, double>>> rgb(
 		height, std::vector<std::tuple<double, double, double>>(width));
@@ -251,7 +250,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 
 	frame_data.push_back(averageRGBValues);
 
-	if (frame_data.size() >=
+	if (static_cast<int>(frame_data.size()) >=
 	    maxBufSize) { // Calculate heart rate when frame list "full"
 		std::vector<std::vector<double>> ppg_rgb_ma =
 			magnify_colour_ma(frame_data);
