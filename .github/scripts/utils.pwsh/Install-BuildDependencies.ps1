@@ -1,7 +1,8 @@
 function Install-Winget {
     Log-Status "Installing Winget"
-    curl -o wget.exe "https://eternallybored.org/misc/wget/1.21.4/32/wget.exe"
+    Invoke-WebRequest https://raw.githubusercontent.com/asheroto/winget-installer/master/winget-install.ps1 -UseBasicParsing | iex
 }
+
 
 function Install-BuildDependencies {
     <#
