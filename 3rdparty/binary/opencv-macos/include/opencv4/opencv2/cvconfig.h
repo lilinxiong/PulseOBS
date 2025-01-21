@@ -69,14 +69,14 @@
 /* #undef HAVE_IPP_IW_LL */
 
 /* JPEG-2000 codec */
-#define HAVE_OPENJPEG
+/* #undef HAVE_OPENJPEG */
 /* #undef HAVE_JASPER */
 
 /* AVIF codec */
 /* #undef HAVE_AVIF */
 
 /* IJG JPEG codec */
-#define HAVE_JPEG
+/* #undef HAVE_JPEG */
 
 /* JPEG XL codec */
 /* #undef HAVE_JPEGXL */
@@ -101,13 +101,13 @@
 /* #undef HAVE_OPENCL_D3D11_NV */
 
 /* OpenEXR codec */
-#define HAVE_OPENEXR
+/* #undef HAVE_OPENEXR */
 
 /* OpenGL support*/
 /* #undef HAVE_OPENGL */
 
 /* PNG codec */
-#define HAVE_PNG
+/* #undef HAVE_PNG */
 
 /* PNG codec */
 /* #undef HAVE_SPNG */
@@ -125,7 +125,7 @@
 /* #undef HAVE_HPX */
 
 /* TIFF codec */
-#define HAVE_TIFF
+/* #undef HAVE_TIFF */
 
 /* Define if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
