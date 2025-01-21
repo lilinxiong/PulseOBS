@@ -72,12 +72,18 @@ function Install-BuildDependencies {
                 }
 
                 winget @Params
-                choco install eigen -y
-                choco install opencv -y
             } catch {
                 throw "Error while installing winget package ${Package}: $_"
             }
         }
     }
+
+    Log-Group "Try install build dependencies using choco"
+
+    choco install eigen -y
+    choco list --local-only eigen
+    choco install opencv -y
+    choco list --local-only opencv
+    
     Log-Group
 }
