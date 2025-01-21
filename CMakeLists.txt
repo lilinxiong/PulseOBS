@@ -46,5 +46,4 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.cpp src/heart_rate_
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/algorithm/HeartRateAlgorithm.cpp src/algorithm/FaceDetection.cpp)
 
-
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

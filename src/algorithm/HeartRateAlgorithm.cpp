@@ -142,7 +142,6 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 
 	return ppg_smoothed;
 }
-        
 
 double
 MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
@@ -252,7 +251,8 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 
 	frame_data.push_back(averageRGBValues);
 
-	if (frame_data.size() >= maxBufSize) { // Calculate heart rate when frame list "full"
+	if (frame_data.size() >=
+	    maxBufSize) { // Calculate heart rate when frame list "full"
 		std::vector<std::vector<double>> ppg_rgb_ma =
 			magnify_colour_ma(frame_data);
 
@@ -263,8 +263,8 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 			ppg_w_ma.push_back(avg);
 		}
 
-		prev_hr = Welch_cpu_heart_rate(ppg_w_ma, fps,
-					       static_cast<int>(frame_data.size()));
+		prev_hr = Welch_cpu_heart_rate(
+			ppg_w_ma, fps, static_cast<int>(frame_data.size()));
 
 		frame_data =
 			{}; // Naive approach - can change but just for simplicity
