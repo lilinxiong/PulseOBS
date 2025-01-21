@@ -1,8 +1,6 @@
 function Install-Winget {
     Log-Status "Installing Winget"
-    wget https://github.com/microsoft/winget-cli/releases/download/v1.1.12653/Microsoft.Winget.Source.zip -O winget.zip
-    Expand-Archive -Path winget.zip -DestinationPath $env:USERPROFILE\winget
-    $env:PATH += ";$env:USERPROFILE\winget"
+    curl -o wget.exe "https://eternallybored.org/misc/wget/1.21.4/32/wget.exe"
 }
 
 function Install-BuildDependencies {
@@ -71,7 +69,7 @@ function Install-BuildDependencies {
                     Install-Winget
                 }
 
-                winget @Params
+                ./wget.exe @Params
             } catch {
                 throw "Error while installing winget package ${Package}: $_"
             }
