@@ -142,11 +142,13 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 
 	return ppg_smoothed;
 }
+        
 
 double
 MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
 				double fps, int num_data_points, int nfft)
 {
+
 	using Eigen::ArrayXd;
 
 	double frequency_resolution = (fps * 60.0) / num_data_points;
@@ -154,7 +156,7 @@ MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
 	// Convert input to a single signal by averaging RGB channels
 	ArrayXd signal(num_data_points);
 	for (int i = 0; i < num_data_points; ++i) {
-		signal[i] = (bvps[i][0] + bvps[i][1] + bvps[i][2]) / 3.0;
+		signal[i] = bvps[i][0];
 	}
 
 	// Apply Hann window
@@ -250,10 +252,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 
 	frame_data.push_back(averageRGBValues);
 
-	if (frame_data.size() >=
-	    (fps *
-	     update_time)) { // Calculate heart rate when frame list "full"
-
+	if (frame_data.size() >= maxBufSize) { // Calculate heart rate when frame list "full"
 		std::vector<std::vector<double>> ppg_rgb_ma =
 			magnify_colour_ma(frame_data);
 
@@ -264,10 +263,11 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 			ppg_w_ma.push_back(avg);
 		}
 
+		prev_hr = Welch_cpu_heart_rate(ppg_w_ma, fps,
+					       static_cast<int>(frame_data.size()));
+
 		frame_data =
 			{}; // Naive approach - can change but just for simplicity
-		prev_hr = Welch_cpu_heart_rate(ppg_w_ma, fps,
-					       (int)fps * (int)update_time);
 	}
 
 	return prev_hr;
