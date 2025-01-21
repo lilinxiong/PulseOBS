@@ -77,18 +77,23 @@ function Package {
     if ( ( $BuildInstaller ) ) {
         Log-Group "Packaging ${ProductName}..."
 
-        $IsccFile = "${ProjectRoot}/build_${Target}/installer-Windows.generated.iss"
-        if ( ! ( Test-Path -Path $IsccFile ) ) {
-            throw 'InnoSetup install script not found. Run the build script or the CMake build and install procedures first.'
-        }
+        try {
+            $IsccFile = "${ProjectRoot}/build_${Target}/installer-Windows.generated.iss"
+            if ( ! ( Test-Path -Path $IsccFile ) ) {
+                throw 'InnoSetup install script not found. Run the build script or the CMake build and install procedures first.'
+            }
 
-        Log-Information 'Creating InnoSetup installer...'
-        Push-Location -Stack BuildTemp
-        Ensure-Location -Path "${ProjectRoot}/release"
-        Copy-Item -Path ${Configuration} -Destination Package -Recurse
-        Invoke-External iscc ${IsccFile} /O"${ProjectRoot}/release" /F"${OutputName}-Installer"
-        Remove-Item -Path Package -Recurse
-        Pop-Location -Stack BuildTemp
+            Log-Information 'Creating InnoSetup installer...'
+            Push-Location -Stack BuildTemp
+            Ensure-Location -Path "${ProjectRoot}/release"
+            Copy-Item -Path ${Configuration} -Destination Package -Recurse
+            Invoke-External iscc ${IsccFile} /O"${ProjectRoot}/release" /F"${OutputName}-Installer"
+            Remove-Item -Path Package -Recurse
+            Pop-Location -Stack BuildTemp
+        } catch {
+            Write-Error "Error during packaging: $_"
+            exit 2
+        }
 
         Log-Group
     }
