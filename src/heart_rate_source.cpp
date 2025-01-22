@@ -19,6 +19,31 @@ const char *get_heart_rate_source_name(void *)
 	return "Heart Rate Monitor";
 }
 
+// Callback function to find the matching scene item
+static bool find_scene_item_callback(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
+{
+	obs_source_t *target_source = (obs_source_t *)param;
+	obs_source_t *item_source = obs_sceneitem_get_source(item);
+
+	if (item_source == target_source) {
+		// Add a reference to the scene item to ensure it doesn't get released
+		obs_sceneitem_addref(item);
+		return false; // Stop enumeration since we found the item
+	}
+
+	return true; // Continue enumeration
+}
+
+static obs_sceneitem_t *get_scene_item_from_source(obs_scene_t *scene, obs_source_t *source)
+{
+	obs_sceneitem_t *found_item = NULL;
+
+	// Enumerate scene items and find the one matching the source
+	obs_scene_enum_items(scene, find_scene_item_callback, source);
+
+	return found_item;
+}
+
 static void create_obs_heart_display_source_if_needed()
 {
 	// check if a source called TEXT_SOURCE_NAME exists
@@ -75,10 +100,13 @@ static void create_obs_heart_display_source_if_needed()
 		transform_info.scale.x = 1.0;
 		transform_info.scale.y = 1.0;
 		transform_info.rot = 0.0;
-		obs_sceneitem_t *source_sceneitem =
-			obs_scene_sceneitem_from_source(scene, source);
-		obs_sceneitem_set_info2(source_sceneitem, &transform_info);
-		obs_sceneitem_release(source_sceneitem);
+		obs_sceneitem_t *source_sceneitem = get_scene_item_from_source(scene, source);
+		if (source_sceneitem == NULL) {
+			obs_log(LOG_INFO, "source_sceneitem is null");
+		} else {
+			obs_sceneitem_set_info2(source_sceneitem, &transform_info);
+			obs_sceneitem_release(source_sceneitem);
+		}
 
 		obs_source_release(source);
 	}
