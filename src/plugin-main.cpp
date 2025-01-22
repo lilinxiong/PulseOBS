@@ -30,8 +30,7 @@ bool obs_module_load(void)
 {
 	obs_register_source(&heart_rate_source_info);
 
-	obs_log(LOG_INFO, "plugin loaded successfully (version %s)",
-		PLUGIN_VERSION);
+	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
 	return true;
 }
 
