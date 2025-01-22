@@ -9,8 +9,7 @@ using namespace std;
 using namespace Eigen;
 
 // Calculating the moving average across a vector of frames
-vector<vector<double>>
-MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
+vector<vector<double>> MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
 {
 	int width = static_cast<int>(rgb[0].size());
 	int height = static_cast<int>(rgb.size());
@@ -30,13 +29,10 @@ MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
 		for (int j = 0; j < static_cast<int>(width); ++j) {
 			// Calculate the row range for the moving average
 			int start_row = max(0, i - n / 2);
-			int end_row =
-				min(static_cast<int>(height), i + n / 2 + 1);
+			int end_row = min(static_cast<int>(height), i + n / 2 + 1);
 
 			// Calculate the moving average
-			output(i, j) = input.block(start_row, j,
-						   end_row - start_row, 1)
-					       .mean();
+			output(i, j) = input.block(start_row, j, end_row - start_row, 1).mean();
 		}
 	}
 
@@ -52,9 +48,8 @@ MovingAvg::moving_average(const vector<vector<double>> &rgb, int n)
 }
 
 // Calculating the average/mean RGB values of a frame
-vector<double_t> MovingAvg::average_keyed(
-	std::vector<std::vector<std::tuple<double, double, double>>> rgb,
-	std::vector<std::vector<bool>> skinkey)
+vector<double_t> MovingAvg::average_keyed(std::vector<std::vector<std::tuple<double, double, double>>> rgb,
+					  std::vector<std::vector<bool>> skinkey)
 {
 	double sumR = 0.0, sumG = 0.0, sumB = 0.0;
 	size_t count = 0;
@@ -83,15 +78,13 @@ vector<double_t> MovingAvg::average_keyed(
 	if (count > 0) {
 		return {sumR / count, sumG / count, sumB / count};
 	} else {
-		return {0.0, 0.0,
-			0.0}; // Handle the case where no pixels matched the key
+		return {0.0, 0.0, 0.0}; // Handle the case where no pixels matched the key
 	}
 }
 
 // Function to magnify color
-std::vector<vector<double>>
-MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
-			     int n_bg_ma, int n_smooth_ma)
+std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta, int n_bg_ma,
+							 int n_smooth_ma)
 {
 	int height = static_cast<int>(rgb.size());
 	int width = static_cast<int>(rgb[0].size());
@@ -112,8 +105,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 	}
 
 	// Step 2: Smooth the resulting PPG
-	vector<vector<double>> ppg_smoothed =
-		moving_average(rgb_detrended, n_smooth_ma);
+	vector<vector<double>> ppg_smoothed = moving_average(rgb_detrended, n_smooth_ma);
 
 	// Step 3: Remove NaNs (replace with 0)
 	// Not necessray as we are working with uint8_t types which cannot be non-numbers
@@ -123,9 +115,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
 			// TODO: We are not sure if we are working with unsigend numers correctly, might need to look after conversion
-			max_val =
-				std::max(max_val, static_cast<int8_t>(std::abs(
-							  ppg_smoothed[i][j])));
+			max_val = std::max(max_val, static_cast<int8_t>(std::abs(ppg_smoothed[i][j])));
 		}
 	}
 
@@ -134,8 +124,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
 				// TODO: We are not sure if we are working with unsigned numbers correctly, might need to look after conversion
-				ppg_smoothed[i][j] = static_cast<double>(
-					delta * ppg_smoothed[i][j] / max_val);
+				ppg_smoothed[i][j] = static_cast<double>(delta * ppg_smoothed[i][j] / max_val);
 			}
 		}
 	}
@@ -143,9 +132,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 	return ppg_smoothed;
 }
 
-double
-MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
-				double fps, int num_data_points)
+double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps, double fps, int num_data_points)
 {
 
 	using Eigen::ArrayXd;
@@ -161,8 +148,7 @@ MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
 	// Apply Hann window
 	ArrayXd hann_window(num_data_points);
 	for (int i = 0; i < num_data_points; ++i) {
-		hann_window[i] = 0.5 * (1 - std::cos(2 * M_PI * i /
-						     (num_data_points - 1)));
+		hann_window[i] = 0.5 * (1 - std::cos(2 * M_PI * i / (num_data_points - 1)));
 	}
 	ArrayXd windowed_signal = signal * hann_window;
 
@@ -172,8 +158,7 @@ MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
 		std::complex<double> sum(0.0, 0.0);
 		for (int n = 0; n < num_data_points; ++n) {
 			double angle = -2.0 * M_PI * k * n / num_data_points;
-			sum += windowed_signal[n] *
-			       std::exp(std::complex<double>(0, angle));
+			sum += windowed_signal[n] * std::exp(std::complex<double>(0, angle));
 		}
 		fft_result[k] = sum;
 	}
@@ -184,23 +169,19 @@ MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
 	for (int k = 0; k < num_data_points; ++k) {
 		double freq = k * (fps / num_data_points);
 		if (freq < lower_cutoff_hz || freq > upper_cutoff_hz) {
-			fft_result[k] =
-				0; // Remove frequencies outside the range
+			fft_result[k] = 0; // Remove frequencies outside the range
 		}
 	}
 
 	// Compute power spectrum
 	int nyquist_limit = num_data_points / 2;
-	ArrayXd power_spectrum = ArrayXd::Zero(
-		nyquist_limit +
-		1); // Only half the spectrum (0 to Nyquist frequency)
+	ArrayXd power_spectrum = ArrayXd::Zero(nyquist_limit + 1); // Only half the spectrum (0 to Nyquist frequency)
 	for (int k = 0; k <= nyquist_limit; ++k) {
 		power_spectrum[k] = std::norm(fft_result[k]) / num_data_points;
 	}
 
 	// Adjust Nyquist limit for human heart rates
-	int nyquist_limit_bpm = std::min(
-		nyquist_limit, static_cast<int>(200 / frequency_resolution));
+	int nyquist_limit_bpm = std::min(nyquist_limit, static_cast<int>(200 / frequency_resolution));
 
 	// Log power spectrum to OBS console in BPM
 	std::ostringstream log_stream;
@@ -244,16 +225,13 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 	}
 
 	// uncomment this when face detect fixed and add to next line as param
-	std::vector<std::vector<bool>> skinKey =
-		detectFacesAndCreateMask(BGRA_data);
+	std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
 	vector<double_t> averageRGBValues = average_keyed(rgb, skinKey);
 
 	frame_data.push_back(averageRGBValues);
 
-	if (static_cast<int>(frame_data.size()) >=
-	    maxBufSize) { // Calculate heart rate when frame list "full"
-		std::vector<std::vector<double>> ppg_rgb_ma =
-			magnify_colour_ma(frame_data);
+	if (static_cast<int>(frame_data.size()) >= maxBufSize) { // Calculate heart rate when frame list "full"
+		std::vector<std::vector<double>> ppg_rgb_ma = magnify_colour_ma(frame_data);
 
 		std::vector<vector<double>> ppg_w_ma;
 		for (auto &f : ppg_rgb_ma) {
@@ -262,11 +240,9 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 			ppg_w_ma.push_back(avg);
 		}
 
-		prev_hr = Welch_cpu_heart_rate(
-			ppg_w_ma, fps, static_cast<int>(frame_data.size()));
+		prev_hr = Welch_cpu_heart_rate(ppg_w_ma, fps, static_cast<int>(frame_data.size()));
 
-		frame_data =
-			{}; // Naive approach - can change but just for simplicity
+		frame_data = {}; // Naive approach - can change but just for simplicity
 	}
 
 	return prev_hr;
