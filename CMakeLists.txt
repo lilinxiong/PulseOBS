@@ -7,6 +7,28 @@ project(${_name} VERSION ${_version})
 option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" ON)
 option(ENABLE_QT "Use Qt functionality" OFF)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+SET (CMAKE_C_FLAGS                "-Wall -std=c99 -fPIC -Wno-unused-parameter -Wno-unused-private-field")
+SET (CMAKE_C_FLAGS                "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
+SET (CMAKE_C_FLAGS_DEBUG          "${CMAKE_C_FLAGS} -g")
+SET (CMAKE_C_FLAGS_MINSIZEREL     "${CMAKE_C_FLAGS} -Os -DNDEBUG -fvisibility=hidden")
+SET (CMAKE_C_FLAGS_RELEASE        "${CMAKE_C_FLAGS} -O3 -DNDEBUG -fvisibility=hidden")
+SET (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS} -O2 -g -fvisibility=hidden")
+
+SET (CMAKE_CXX_FLAGS                "-Wall -ffunction-sections -fdata-sections -fPIC -Wno-unused-parameter -Wno-unused-private-field")
+SET (CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS} -g")
+SET (CMAKE_CXX_FLAGS_MINSIZEREL     "${CMAKE_CXX_FLAGS} -Os -DNDEBUG -fvisibility=hidden")
+SET (CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fvisibility=hidden")
+SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} -O2 -g -fvisibility=hidden")
+
+message("=======CMAKE cur_ver: ${CMAKE_VERSION}, cur_build_type:${CMAKE_BUILD_TYPE}, CMAKE_SYSTEM_NAME:${CMAKE_SYSTEM_NAME}")
+
 include(compilerconfig)
 include(defaults)
 include(helpers)
@@ -26,9 +48,17 @@ if(WIN32)
   set(OpenCV_LIBRARIES "C:/tools/opencv/build/x64/vc16/lib")
 endif()
 
-add_definitions(-DNO=)
+set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/binary/opencv-4.11.0-macos/lib/cmake/opencv4)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
+
+if (OpenCV_FOUND)
+  message("OpenCV_FOUND:${OpenCV_FOUND}")
+  message("OpenCV_VERSION:${OpenCV_VERSION}")
+  message("OpenCV_INCLUDE_DIRS:${OpenCV_INCLUDE_DIRS}")
+  message("OpenCV_LIBRARIES:${OpenCV_LIBRARIES}")
+endif ()
+
 include_directories(${OpenCV_INCLUDE_DIR})
 link_directories(${OpenCV_LIBRARIES})
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${OpenCV_LIBRARIES})
