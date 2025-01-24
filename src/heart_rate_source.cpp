@@ -19,6 +19,33 @@ const char *get_heart_rate_source_name(void *)
 	return "Heart Rate Monitor";
 }
 
+// Callback function to find the matching scene item
+static bool find_scene_item_callback(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
+{
+	UNUSED_PARAMETER(scene);
+
+	obs_source_t *target_source = (obs_source_t *)param;
+	obs_source_t *item_source = obs_sceneitem_get_source(item);
+
+	if (item_source == target_source) {
+		// Add a reference to the scene item to ensure it doesn't get released
+		obs_sceneitem_addref(item);
+		return false; // Stop enumeration since we found the item
+	}
+
+	return true; // Continue enumeration
+}
+
+static obs_sceneitem_t *get_scene_item_from_source(obs_scene_t *scene, obs_source_t *source)
+{
+	obs_sceneitem_t *found_item = NULL;
+
+	// Enumerate scene items and find the one matching the source
+	obs_scene_enum_items(scene, find_scene_item_callback, source);
+
+	return found_item;
+}
+
 static void create_obs_heart_display_source_if_needed()
 {
 	// check if a source called TEXT_SOURCE_NAME exists
@@ -33,8 +60,7 @@ static void create_obs_heart_display_source_if_needed()
 	// create a new OBS text source called TEXT_SOURCE_NAME
 	obs_source_t *scene_as_source = obs_frontend_get_current_scene();
 	obs_scene_t *scene = obs_scene_from_source(scene_as_source);
-	source = obs_source_create("text_ft2_source_v2", TEXT_SOURCE_NAME,
-				   nullptr, nullptr);
+	source = obs_source_create("text_ft2_source_v2", TEXT_SOURCE_NAME, nullptr, nullptr);
 
 	if (source) {
 		// add source to the current scene
@@ -57,8 +83,7 @@ static void create_obs_heart_display_source_if_needed()
 		obs_data_release(font_data);
 
 		std::string heartRateText = "Heart Rate: 0 BPM";
-		obs_data_set_string(source_settings, "text",
-				    heartRateText.c_str());
+		obs_data_set_string(source_settings, "text", heartRateText.c_str());
 		obs_source_update(source, source_settings);
 		obs_data_release(source_settings);
 
@@ -68,17 +93,19 @@ static void create_obs_heart_display_source_if_needed()
 		transform_info.pos.y = 1040.0 - 50.0;
 		transform_info.bounds.x = 500.0;
 		transform_info.bounds.y = 145.0;
-		transform_info.bounds_type =
-			obs_bounds_type::OBS_BOUNDS_SCALE_INNER;
+		transform_info.bounds_type = obs_bounds_type::OBS_BOUNDS_SCALE_INNER;
 		transform_info.bounds_alignment = OBS_ALIGN_CENTER;
 		transform_info.alignment = OBS_ALIGN_CENTER;
 		transform_info.scale.x = 1.0;
 		transform_info.scale.y = 1.0;
 		transform_info.rot = 0.0;
-		obs_sceneitem_t *source_sceneitem =
-			obs_scene_sceneitem_from_source(scene, source);
-		obs_sceneitem_set_info2(source_sceneitem, &transform_info);
-		obs_sceneitem_release(source_sceneitem);
+		obs_sceneitem_t *source_sceneitem = get_scene_item_from_source(scene, source);
+		if (source_sceneitem == NULL) {
+			obs_log(LOG_INFO, "source_sceneitem is null");
+		} else {
+			obs_sceneitem_set_info2(source_sceneitem, &transform_info);
+			obs_sceneitem_release(source_sceneitem);
+		}
 
 		obs_source_release(source);
 	}
@@ -109,8 +136,7 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 void heart_rate_source_destroy(void *data)
 {
 	obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
-	struct heart_rate_source *hrs =
-		reinterpret_cast<struct heart_rate_source *>(data);
+	struct heart_rate_source *hrs = reinterpret_cast<struct heart_rate_source *>(data);
 
 	if (hrs) {
 		hrs->isDisabled = true;
@@ -137,16 +163,14 @@ obs_properties_t *heart_rate_source_properties(void *data)
 void heart_rate_source_activate(void *data)
 {
 	obs_log(LOG_INFO, "Heart rate monitor activated");
-	struct heart_rate_source *hrs =
-		reinterpret_cast<heart_rate_source *>(data);
+	struct heart_rate_source *hrs = reinterpret_cast<heart_rate_source *>(data);
 	hrs->isDisabled = false;
 }
 
 void heart_rate_source_deactivate(void *data)
 {
 	obs_log(LOG_INFO, "Heart rate monitor deactivated");
-	struct heart_rate_source *hrs =
-		reinterpret_cast<heart_rate_source *>(data);
+	struct heart_rate_source *hrs = reinterpret_cast<heart_rate_source *>(data);
 	hrs->isDisabled = true;
 }
 
@@ -155,8 +179,7 @@ void heart_rate_source_tick(void *data, float seconds)
 {
 	UNUSED_PARAMETER(seconds);
 
-	struct heart_rate_source *hrs =
-		reinterpret_cast<struct heart_rate_source *>(data);
+	struct heart_rate_source *hrs = reinterpret_cast<struct heart_rate_source *>(data);
 
 	if (hrs->isDisabled) {
 		return;
@@ -278,8 +301,7 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 	// static_cast<float>(height): The top coordinate of the projection, set to the height of the target source
 	// -100.0f: The near clipping plane. The near clipping plane is the closest plane to the camera. Objects closer to the camera than this plane are clipped (not rendered). It helps to avoid rendering artifacts and improves depth precision by discarding objects that are too close to the camera
 	// 100.0f: The far clipping plane. The far clipping plane is the farthest plane from the camera. Objects farther from the camera than this plane are clipped (not rendered).It helps to limit the rendering distance and manage depth buffer precision by discarding objects that are too far away
-	gs_ortho(0.0f, static_cast<float>(width), 0.0f,
-		 static_cast<float>(height), -100.0f, 100.0f);
+	gs_ortho(0.0f, static_cast<float>(width), 0.0f, static_cast<float>(height), -100.0f, 100.0f);
 
 	// This function saves the current blend state onto a stack. The blend state includes settings that control how colors from different sources are combined during rendering. By pushing the current blend state, you can make temporary changes to the blend settings and later restore the original settings by popping the blend state from the stack
 	gs_blend_state_push();
@@ -302,10 +324,8 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 
 	// Retrieve the old existing stage surface
 	if (hrs->stagesurface) {
-		uint32_t stagesurf_width =
-			gs_stagesurface_get_width(hrs->stagesurface);
-		uint32_t stagesurf_height =
-			gs_stagesurface_get_height(hrs->stagesurface);
+		uint32_t stagesurf_width = gs_stagesurface_get_width(hrs->stagesurface);
+		uint32_t stagesurf_height = gs_stagesurface_get_height(hrs->stagesurface);
 		// If it still matches the new width and height, reuse it
 		if (stagesurf_width != width || stagesurf_height != height) {
 			// Destroy the old stage surface
@@ -316,17 +336,15 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 
 	// Create a new stage surface if necessary
 	if (!hrs->stagesurface) {
-		hrs->stagesurface =
-			gs_stagesurface_create(width, height, GS_BGRA);
+		hrs->stagesurface = gs_stagesurface_create(width, height, GS_BGRA);
 	}
 
 	// Use gs_stage_texture to stage the texture from the texture renderer (hrs->texrender) to the stage surface (hrs->stagesurface). This operation transfers the rendered texture to the stage surface for further processing
-	gs_stage_texture(hrs->stagesurface,
-			 gs_texrender_get_texture(hrs->texrender));
+	gs_stage_texture(hrs->stagesurface, gs_texrender_get_texture(hrs->texrender));
 
 	// Use gs_stagesurface_map to map the stage surface and retrieve the video data and line size. The video_data pointer will point to the BGRA data, and linesize will indicate the number of bytes per line
 	uint8_t *video_data; // A pointer to the memory location where the BGRA data will be accessible
-	uint32_t linesize; // The number of bytes per line (or row) of the image data
+	uint32_t linesize;   // The number of bytes per line (or row) of the image data
 	// The gs_stagesurface_map function creates a mapping between the GPU memory and the CPU memory. This allows the CPU to access the pixel data directly from the GPU memory
 	if (!gs_stagesurface_map(hrs->stagesurface, &video_data, &linesize)) {
 		return false;
@@ -334,9 +352,7 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 
 	{
 		std::lock_guard<std::mutex> lock(hrs->BGRA_data_mutex);
-		struct input_BGRA_data *BGRA_data =
-			(struct input_BGRA_data *)bzalloc(
-				sizeof(struct input_BGRA_data));
+		struct input_BGRA_data *BGRA_data = (struct input_BGRA_data *)bzalloc(sizeof(struct input_BGRA_data));
 		BGRA_data->width = width;
 		BGRA_data->height = height;
 		BGRA_data->linesize = linesize;
@@ -355,8 +371,7 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	UNUSED_PARAMETER(effect);
 
 	//obs_log(LOG_INFO, "--------------Start of RENDER!!!!!!!!!");
-	struct heart_rate_source *hrs =
-		reinterpret_cast<struct heart_rate_source *>(data);
+	struct heart_rate_source *hrs = reinterpret_cast<struct heart_rate_source *>(data);
 
 	if (!hrs->source) {
 		obs_log(LOG_INFO, "--------NO SOURCE!!!!!!!!");
