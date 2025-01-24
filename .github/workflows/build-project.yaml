@@ -75,7 +75,6 @@ jobs:
     name: Build for macOS 🍏
     runs-on: macos-15
     needs: check-event
-    if: false  # This condition will skip the job
     defaults:
       run:
         shell: zsh --no-rcs --errexit --pipefail {0}
@@ -183,7 +182,7 @@ jobs:
         os: [ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     needs: check-event
-    if: false  # This condition will skip the job
+
     defaults:
       run:
         shell: bash
