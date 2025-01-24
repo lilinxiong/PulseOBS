@@ -124,9 +124,7 @@ std::vector<vector<double>> MovingAvg::magnify_colour_ma(const vector<vector<dou
 	return ppg_smoothed;
 }
 
-double
-MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
-				int num_data_points)
+double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps, int num_data_points)
 {
 
 	using Eigen::ArrayXd;
@@ -234,8 +232,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 			ppg_w_ma.push_back(avg);
 		}
 
-		prev_hr = Welch_cpu_heart_rate(
-			ppg_w_ma, static_cast<int>(frame_data.size()));
+		prev_hr = Welch_cpu_heart_rate(ppg_w_ma, static_cast<int>(frame_data.size()));
 
 		frame_data = {}; // Naive approach - can change but just for simplicity
 	}

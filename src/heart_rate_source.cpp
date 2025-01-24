@@ -23,7 +23,7 @@ const char *get_heart_rate_source_name(void *)
 static bool find_scene_item_callback(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 {
 	UNUSED_PARAMETER(scene);
-	
+
 	obs_source_t *target_source = (obs_source_t *)param;
 	obs_source_t *item_source = obs_sceneitem_get_source(item);
 
