@@ -6,6 +6,7 @@ on:
       - plugin
       - algorithm
       - install-dependencies
+      - macos-compile
     tags:
       - '*'
 permissions:
