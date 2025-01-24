@@ -62,7 +62,7 @@ vector<double_t> MovingAvg::average_keyed(
 	// Iterate through the frame pixels using the key
 	for (int i = 0; i < static_cast<int>(rgb.size()); ++i) {
 		for (int j = 0; j < static_cast<int>(rgb[0].size()); ++j) {
-			if (skinKey[i][j]) {
+			if (skinkey[i][j]) {
 				sumR += get<0>(rgb[i][j]);
 				sumG += get<1>(rgb[i][j]);
 				sumB += get<2>(rgb[i][j]);
