@@ -169,10 +169,6 @@ ${_usage_host:-}"
     autoload -Uz setup_ubuntu && setup_ubuntu
   }
 
-  log_group 'Installing and building opencv...'
-  python3 .github/build-opencv-macos.py
-  log_group
-
   local product_name
   local product_version
   read -r product_name product_version <<< \
