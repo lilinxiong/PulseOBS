@@ -7,6 +7,7 @@ on:
       - algorithm
       - install-dependencies
       - macos-compile
+      - linux-compile
     tags:
       - '*'
 permissions:
