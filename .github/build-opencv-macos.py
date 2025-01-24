@@ -162,22 +162,20 @@ print(f"OpenCV temporary directory path is {opencv_tmp_dir_path}")
 
 # Ensure the output directory exists
 if os.path.exists(opencv_out_dir_path):
-    print(f"Output directory {opencv_out_dir_path} already contains files. Deleting it.")
-    shutil.rmtree(opencv_out_dir_path)
+    print(f"Output directory {opencv_out_dir_path} already contains files. Keep it.")
+else:
+    os.makedirs(opencv_out_dir_path)
+    download_opencv_source_code(opencv_src_dir_path)
 
-os.makedirs(opencv_out_dir_path)
+    # Have a temporary directory for building OpenCV
+    if os.path.exists(opencv_tmp_dir_path):
+        print(f"Temporary directory {opencv_tmp_dir_path} already exists. Removing it.")
+        shutil.rmtree(opencv_tmp_dir_path)
+    os.makedirs(opencv_tmp_dir_path)
+    # cd to the temporary directory
+    os.chdir(opencv_tmp_dir_path)
 
-download_opencv_source_code(opencv_src_dir_path)
+    cmake_build()
 
-# Have a temporary directory for building OpenCV
-if os.path.exists(opencv_tmp_dir_path):
-    print(f"Temporary directory {opencv_tmp_dir_path} already exists. Removing it.")
-    shutil.rmtree(opencv_tmp_dir_path)
-os.makedirs(opencv_tmp_dir_path)
-# cd to the temporary directory
-os.chdir(opencv_tmp_dir_path)
-
-cmake_build()
-
-# Remove the temporary directory and downloaded source
-shutil.rmtree(third_party_dir_path)
+    # Remove the temporary directory and downloaded source
+    shutil.rmtree(third_party_dir_path)
