@@ -1,6 +1,5 @@
 import os
 import subprocess
-import requests
 import tarfile
 import shutil
 
@@ -14,12 +13,8 @@ def download_opencv_source_code(target_dir):
     os.makedirs(os.path.dirname(target_dir), exist_ok=True)
 
     print(f"Downloading repository tarball from {REPO_URL}...")
-    response = requests.get(REPO_URL, stream=True)
-    response.raise_for_status()  # Check if the request was successful
-
-    with open(TARBALL_NAME, "wb") as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
+    download_opencv_cmd = ["wget", "-O", f"./{TARBALL_NAME}", REPO_URL]
+    subprocess.run(download_opencv_cmd, check=True)
 
     print(f"Extracting {TARBALL_NAME}...")
     with tarfile.open(TARBALL_NAME, "r:gz") as tar:
@@ -54,6 +49,8 @@ def cmake_build():
         f"-DBUILD_PROTOBUF=OFF",
         f"-DBUILD_SHARED_LIBS=OFF",
         f"-DBUILD_TBB=OFF",
+        f"-DBUILD_IPP_IW=OFF",
+        f"-DWITH_IPP=OFF",
         f"-DBUILD_TESTS=OFF",
         f"-DBUILD_TIFF=OFF",
         f"-DBUILD_WEBP=OFF",
@@ -67,8 +64,8 @@ def cmake_build():
         f"-DBUILD_opencv_python_tests=OFF",
         f"-DBUILD_opencv_ts=OFF",
         f"-DBUILD_opencv_world=OFF",
-        f"-DCPU_BASELINE=NEON_DOTPROD",
-        f"-DCPU_DISPATCH=NEON_DOTPROD",
+        f"-DCPU_BASELINE=''",
+        f"-DCPU_DISPATCH=''",
         f"-DENABLE_LIBJPEG_TURBO_SIMD=OFF",
         f"-DOPENCL_FOUND=OFF",
         f"-DOPENCV_DNN_CUDA=OFF",
@@ -90,11 +87,15 @@ def cmake_build():
         f"-DWITH_FREETYPE=OFF",
         f"-DWITH_GDAL=OFF",
         f"-DWITH_GDCM=OFF",
+        f"-DWITH_CAROTENE=OFF",
         f"-DWITH_GPHOTO2=OFF",
         f"-DWITH_GSTREAMER=OFF",
         f"-DWITH_HALIDE=OFF",
         f"-DWITH_IMGCODEC_GIF=OFF",
         f"-DWITH_IMGCODEC_HDR=OFF",
+        f"-DWITH_IMGCODEC_PFM=OFF",
+        f"-DWITH_IMGCODEC_PXM=OFF",
+        f"-DWITH_IMGCODEC_SUNRASTER=OFF",
         f"-DWITH_ITT=OFF",
         f"-DWITH_JASPER=OFF",
         f"-DWITH_JPEG=OFF",
@@ -126,7 +127,10 @@ def cmake_build():
         f"-DWITH_WEBNN=OFF",
         f"-DWITH_WEBP=OFF",
         f"-DWITH_XIMEA=OFF",
+        f"-DWITH_ZLIB=OFF",
         f"-DWITH_ZLIB_NG=OFF",
+        f"-DWITH_LAPACK=OFF",
+        f"-DWITH_OBSENSOR=OFF",
         f"-Dold-jpeg=OFF",
         f"..",
     ]

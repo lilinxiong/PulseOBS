@@ -184,10 +184,6 @@ ${_usage_host:-}"
     setup_ccache
   }
 
-  log_group 'Build opencv'
-  # python3 .github/build-opencv-macos.py
-  log_group
-
   if [[ ${host_os} == linux ]] {
     autoload -Uz setup_linux && setup_linux
   }
