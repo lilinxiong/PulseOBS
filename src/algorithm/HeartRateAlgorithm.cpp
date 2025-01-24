@@ -57,25 +57,15 @@ vector<double_t> MovingAvg::average_keyed(
 	std::vector<std::vector<bool>> skinkey)
 {
 	double sumR = 0.0, sumG = 0.0, sumB = 0.0;
-	size_t count = 0;
+	double count = 0;
 
 	// Iterate through the frame pixels using the key
 	for (int i = 0; i < static_cast<int>(rgb.size()); ++i) {
 		for (int j = 0; j < static_cast<int>(rgb[0].size()); ++j) {
-			// remove this when face detect fixed
-			if (skinkey.empty()) {
-				sumR += get<0>(rgb[i][j]);
-				sumG += get<1>(rgb[i][j]);
-				sumB += get<2>(rgb[i][j]);
-				count++;
-			} else {
-				if (skinkey[i][j]) {
-					sumR += get<0>(rgb[i][j]);
-					sumG += get<1>(rgb[i][j]);
-					sumB += get<2>(rgb[i][j]);
-					count++;
-				}
-			}
+			sumR += get<0>(rgb[i][j]);
+			sumG += get<1>(rgb[i][j]);
+			sumB += get<2>(rgb[i][j]);
+			count++;
 		}
 	}
 
@@ -145,7 +135,7 @@ MovingAvg::magnify_colour_ma(const vector<vector<double>> &rgb, double delta,
 
 double
 MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps,
-				double fps, int num_data_points)
+				int num_data_points)
 {
 
 	using Eigen::ArrayXd;
@@ -263,7 +253,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 		}
 
 		prev_hr = Welch_cpu_heart_rate(
-			ppg_w_ma, fps, static_cast<int>(frame_data.size()));
+			ppg_w_ma, static_cast<int>(frame_data.size()));
 
 		frame_data =
 			{}; // Naive approach - can change but just for simplicity
