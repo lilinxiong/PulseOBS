@@ -87,6 +87,7 @@ function Build {
     }
 
     Log-Information "Checking for Eigen..."
+    choco install eigen -y
     if (-not (choco list eigen --exact --local-only -ErrorAction SilentlyContinue)) {
         Log-Information "Eigen not found. Installing Eigen..."
         choco install eigen -y
@@ -96,6 +97,7 @@ function Build {
     }
 
     Log-Information "Checking for OpenCV..."
+    choco install eigen -y
     if (-not (choco list opencv --exact --local-only -ErrorAction SilentlyContinue)) {
         log_info "OpenCV not found. Installing OpenCV..."
         choco install opencv -y
