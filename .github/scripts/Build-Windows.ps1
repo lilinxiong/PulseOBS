@@ -97,7 +97,7 @@ function Build {
 
     Log-Information "Checking for OpenCV..."
     if (-not (choco list opencv --exact --limit-output)) {
-        log_info "OpenCV not found. Installing OpenCV..."
+        Log-Information "OpenCV not found. Installing OpenCV..."
         choco install opencv -y
         Log-Status "OpenCV installed."
     } else {
