@@ -28,7 +28,7 @@ struct heart_rate_source {
 	gs_stagesurf_t *stagesurface;
 #ifdef __cplusplus
 	input_BGRA_data *BGRA_data;
-	std::mutex BGRA_data_mutex; // C++ mutex
+	std::mutex BGRA_data_mutex;
 #else
 	struct input_BGRA_data *BGRA_data;
 	void *BGRA_data_mutex; // Placeholder for C compatibility
