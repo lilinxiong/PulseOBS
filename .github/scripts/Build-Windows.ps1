@@ -87,7 +87,7 @@ function Build {
     }
 
     Log-Information "Checking for Eigen..."
-    if (-not (choco list eigen --exact)) {
+    if (-not (choco list eigen --exact --limit-output)) {
         Log-Information "Eigen not found. Installing Eigen..."
         choco install eigen -y
         Log-Status "Eigen installed."
@@ -96,7 +96,7 @@ function Build {
     }
 
     Log-Information "Checking for OpenCV..."
-    if (-not (choco list opencv --exact)) {
+    if (-not (choco list opencv --exact --limit-output)) {
         log_info "OpenCV not found. Installing OpenCV..."
         choco install opencv -y
         Log-Status "OpenCV installed."
