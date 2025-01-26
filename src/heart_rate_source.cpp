@@ -51,7 +51,6 @@ static void create_obs_heart_display_source_if_needed()
 	// check if a source called TEXT_SOURCE_NAME exists
 	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
 	if (source) {
-		obs_log(LOG_INFO, "SOURCE ALREADY EXISTS!!!!!!!");
 		// source already exists, release it
 		obs_source_release(source);
 		return;
@@ -100,9 +99,7 @@ static void create_obs_heart_display_source_if_needed()
 		transform_info.scale.y = 1.0;
 		transform_info.rot = 0.0;
 		obs_sceneitem_t *source_sceneitem = get_scene_item_from_source(scene, source);
-		if (source_sceneitem == NULL) {
-			obs_log(LOG_INFO, "source_sceneitem is null");
-		} else {
+		if (source_sceneitem != NULL) {
 			obs_sceneitem_set_info2(source_sceneitem, &transform_info);
 			obs_sceneitem_release(source_sceneitem);
 		}
@@ -117,25 +114,19 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 {
 	UNUSED_PARAMETER(settings);
 
-	obs_log(LOG_INFO, "--------------Start of CREATE!!!!!!!!!");
-
 	void *data = bmalloc(sizeof(struct heart_rate_source));
 	struct heart_rate_source *hrs = new (data) heart_rate_source();
-	// (struct heart_rate_source *)bzalloc(
-	// 	sizeof(struct heart_rate_source));
 
 	hrs->source = source;
 	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
 	create_obs_heart_display_source_if_needed();
 
-	obs_log(LOG_INFO, "--------------END OF CREATE!!!!!");
 	return hrs;
 }
 
 // Destroy function
 void heart_rate_source_destroy(void *data)
 {
-	obs_log(LOG_INFO, "--------------Start of DESTROY!!!!!!!!!");
 	struct heart_rate_source *hrs = reinterpret_cast<struct heart_rate_source *>(data);
 
 	if (hrs) {
@@ -154,7 +145,6 @@ void heart_rate_source_destroy(void *data)
 obs_properties_t *heart_rate_source_properties(void *data)
 {
 	UNUSED_PARAMETER(data);
-	obs_log(LOG_INFO, "PROPERTIES");
 	obs_properties_t *props = obs_properties_create();
 
 	return props;
@@ -188,41 +178,10 @@ void heart_rate_source_tick(void *data, float seconds)
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
-
-	//obs_log(LOG_INFO, "--------------Start of TICK!!!!!!!!!");
-	// Logic to update per frame
 }
 
 static std::string processBGRAData(struct input_BGRA_data *BGRA_data)
 {
-	// uint8_t *data = BGRA_data->data;
-	// uint32_t width = BGRA_data->width;
-	// uint32_t height = BGRA_data->height;
-	// uint32_t linesize = BGRA_data->linesize;
-	// uint64_t sumB = 0, sumG = 0, sumR = 0, sumA = 0;
-	// uint32_t pixel_count = width * height;
-
-	// for (uint32_t y = 0; y < height; ++y) {
-	// 	for (uint32_t x = 0; x < width; ++x) {
-	// 		uint8_t B = data[y * linesize + x * 4 + 0];
-	// 		uint8_t G = data[y * linesize + x * 4 + 1];
-	// 		uint8_t R = data[y * linesize + x * 4 + 2];
-	// 		uint8_t A = data[y * linesize + x * 4 + 3];
-	// 		sumB += B;
-	// 		sumG += G;
-	// 		sumR += R;
-	// 		sumA += A;
-	// 	}
-	// }
-
-	// double averageB = static_cast<double>(sumB) / pixel_count;
-	// double averageG = static_cast<double>(sumG) / pixel_count;
-	// double averageR = static_cast<double>(sumR) / pixel_count;
-	// double averageA = static_cast<double>(sumA) / pixel_count;
-
-	// obs_log(LOG_INFO, "Average B: %f, G: %f, R: %f, A: %f\n", averageB,
-	// 	averageG, averageR, averageA);
-
 	double heart_rate = avg.calculateHeartRate(BGRA_data);
 	std::string log = "Heart Rate: " + std::to_string(heart_rate);
 	obs_log(LOG_INFO, log.c_str());
@@ -234,7 +193,6 @@ static std::string processBGRAData(struct input_BGRA_data *BGRA_data)
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 {
-	//obs_log(LOG_INFO, "--------BGRASTART!!!!!!!!");
 	uint32_t width;
 	uint32_t height;
 
@@ -243,16 +201,11 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	//obs_log(LOG_INFO, "--------RETRIEVING TARGET SOURCE!!!!!!!!");
-
 	// Retrieve the target source of the filter
 	obs_source_t *target = obs_filter_get_target(hrs->source);
 	if (!target) {
 		return false;
 	}
-
-	//obs_log(LOG_INFO,
-	//	"--------RETRIEVING BASE DIMENSIONS OF TARGET SOURCE!!!!!!!!");
 
 	// Retrieve the base dimensions of the target source
 	width = obs_source_get_base_width(target);
@@ -261,20 +214,14 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 		return false;
 	}
 
-	//obs_log(LOG_INFO, "--------RESETTING THE TEXTURE RENDERER!!!!!!!!");
-
 	// Resets the texture renderer and begins rendering with the specified width and height
 	gs_texrender_reset(hrs->texrender);
 	if (!hrs->texrender) {
-		obs_log(LOG_INFO, "texrender is null");
-	}
-	if (!gs_texrender_begin(hrs->texrender, width, height)) {
-		obs_log(LOG_INFO, "--------FAILED TO START RENDERING!!!!!!!!");
 		return false;
 	}
-
-	//obs_log(LOG_INFO,
-	//	"--------FINISHED RESETTING THE TEXTURE RENDERER!!!!!!!!");
+	if (!gs_texrender_begin(hrs->texrender, width, height)) {
+		return false;
+	}
 
 	// Clear up and set up rendering
 	// - Clears the rendering surface with a zeroed background
@@ -370,11 +317,9 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 {
 	UNUSED_PARAMETER(effect);
 
-	//obs_log(LOG_INFO, "--------------Start of RENDER!!!!!!!!!");
 	struct heart_rate_source *hrs = reinterpret_cast<struct heart_rate_source *>(data);
 
 	if (!hrs->source) {
-		obs_log(LOG_INFO, "--------NO SOURCE!!!!!!!!");
 		return;
 	}
 
@@ -384,12 +329,10 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	}
 
 	if (!getBGRAFromStageSurface(hrs)) {
-		//obs_log(LOG_INFO, "--------BGRA FAIL!!!!!!!!");
 		obs_source_skip_video_filter(hrs->source);
 		return;
 	}
 
-	//obs_log(LOG_INFO, "--------START PROCESS BGRA DATA!!!!!!");
 	std::string result = processBGRAData(hrs->BGRA_data);
 
 	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
@@ -398,8 +341,6 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	obs_source_update(source, source_settings);
 	obs_data_release(source_settings);
 	obs_source_release(source);
-
-	//obs_log(LOG_INFO, "--------END PROCESS BGRA DATA!!!!!!");
 
 	obs_source_skip_video_filter(hrs->source);
 }

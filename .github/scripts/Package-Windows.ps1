@@ -65,14 +65,7 @@ function Package {
         DestinationPath = "${ProjectRoot}/release/${OutputName}.zip"
         Verbose = ($Env:CI -ne $null)
     }
-
-    Log-Information "Debug: Compress-Archive @CompressArgs Start"
-    try {
-        Compress-Archive -Force @CompressArgs
-    } catch {
-        Write-Error $_
-        exit 2
-    }
+    Compress-Archive -Force @CompressArgs
     Log-Group
 }
 

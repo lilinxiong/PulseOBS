@@ -27,12 +27,10 @@ if ( $PSVersionTable.PSVersion -lt '7.2.0' ) {
 }
 
 function Install-Choco {
-    Log-Status "Installing Chocolatey"
     Set-ExecutionPolicy Bypass -Scope Process -Force
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-WebRequest https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex
+    Invoke-WebRequest https://community.chocolatey.org/install.ps1 -UseBasicParsing | Invoke-Expression
 }
-
 
 function Build {
     trap {
@@ -78,14 +76,34 @@ function Build {
         '--config', $Configuration
     )
 
-    Log-Group "Try install build dependencies using choco"
+    Log-Group "Install Windows build requirements"
+    Log-Information "Checking for Chocolatey..."
     if (-not (Get-Command -ErrorAction SilentlyContinue choco)) {
+        Log-Information "Chocolatey not found. Installing Chocolatey..."
         Install-Choco
+        Log-Status "Chocolatey installed."
+    } else {
+        Log-Status "Chocolatey found."
     }
-    choco install eigen -y
-    choco list --local-only eigen
-    choco install opencv -y
-    choco list --local-only opencv
+
+    Log-Information "Checking for Eigen..."
+    if (-not (choco list eigen --exact --limit-output)) {
+        Log-Information "Eigen not found. Installing Eigen..."
+        choco install eigen -y
+        Log-Status "Eigen installed."
+    } else {
+        Log-Status "Eigen found."
+    }
+
+    Log-Information "Checking for OpenCV..."
+    if (-not (choco list opencv --exact --limit-output)) {
+        Log-Information "OpenCV not found. Installing OpenCV..."
+        choco install opencv -y
+        Log-Status "OpenCV installed."
+    } else {
+        Log-Status "OpenCV found."
+    }
+
     Log-Group
 
     Log-Group "Configuring ${ProductName}..."
