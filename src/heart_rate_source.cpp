@@ -6,6 +6,7 @@
 #include <obs-source.h>
 #include <obs-data.h>
 #include <graphics/graphics.h>
+#include <graphics/matrix4.h>
 #include <util/platform.h>
 #include <vector>
 #include <sstream>
@@ -342,8 +343,10 @@ static gs_texture_t *draw_rectangle(struct heart_rate_source *hrs, uint32_t widt
 
 	gs_effect_set_texture(gs_effect_get_param_by_name(hrs->testing, "image"), blurredTexture);
 
-	if (face_coordinates.size() > 0) {
-		gs_effect_set_vec4(gs_effect_get_param_by_name(hrs->testing, "rect"), &face_coordinates[0]);
+	std::vector<std::string> params = {"face", "eye_1", "eye_2", "mouth"};
+
+	for (int i = 0; i < std::min(4, static_cast<int>(face_coordinates.size())); i++) {
+		gs_effect_set_vec4(gs_effect_get_param_by_name(hrs->testing, params[i].c_str()), &face_coordinates[i]);
 	}
 
 	struct vec4 background;

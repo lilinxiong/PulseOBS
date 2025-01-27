@@ -1,8 +1,18 @@
+#define MAX_RECTS 100
+
 uniform float4x4 ViewProj;
 uniform texture2d image;
 
 uniform float4 color = {0.5, 1.0, 0.5, 1.0};  // Rectangle outline color
-uniform float4 rect; // = {0.25f, 0.75f, 0.25f, 0.75f};
+
+uniform float4 face;
+uniform float4 eye_1;
+uniform float4 eye_2;
+uniform float4 mouth;
+
+uniform float4 rects[MAX_RECTS];             // Array to store up to 100 rectangles
+uniform int rectCount = 0;                   // Number of valid rectangles
+
 uniform float borderThickness = 0.001f; // Thickness of the rectangle outline
 
 sampler_state texSampler {
@@ -25,20 +35,21 @@ VertexInOut VShader(VertexInOut vert_in)
 }
 
 float4 PShader(VertexInOut fragment_in) : TARGET
-{
-    // Define rectangle bounds in normalized texture coordinates (0 to 1 range)
-    float rectMinX = 0.25f;
-    float rectMaxX = 0.75f;
-    float rectMinY = 0.25f;
-    float rectMaxY = 0.75f;
+{   
+    bool isInFace = (abs(fragment_in.uv.x - face[0]) < borderThickness || abs(fragment_in.uv.x - face[1]) < borderThickness) && fragment_in.uv.y >= face[2] && fragment_in.uv.y <= face[3] ||
+                    (abs(fragment_in.uv.y - face[2]) < borderThickness || abs(fragment_in.uv.y - face[3]) < borderThickness) && fragment_in.uv.x >= face[0] && fragment_in.uv.x <= face[1];
 
-    // Check if the fragment is near the rectangle border
-    bool isOnBorder = false;
-    
-    // Check if the fragment is inside the rectangle
-    if ((abs(fragment_in.uv.x - rect[0]) < borderThickness || abs(fragment_in.uv.x - rect[1]) < borderThickness) && fragment_in.uv.y >= rect[2] && fragment_in.uv.y <= rect[3] ||
-        (abs(fragment_in.uv.y - rect[2]) < borderThickness || abs(fragment_in.uv.y - rect[3]) < borderThickness) && fragment_in.uv.x >= rect[0] && fragment_in.uv.x <= rect[1]) {
-        // If inside the rectangle, return the color
+    bool isInEye1 = (abs(fragment_in.uv.x - eye_1[0]) < borderThickness || abs(fragment_in.uv.x - eye_1[1]) < borderThickness) && fragment_in.uv.y >= eye_1[2] && fragment_in.uv.y <= eye_1[3] ||
+                    (abs(fragment_in.uv.y - eye_1[2]) < borderThickness || abs(fragment_in.uv.y - eye_1[3]) < borderThickness) && fragment_in.uv.x >= eye_1[0] && fragment_in.uv.x <= eye_1[1];
+
+    bool isInEye2 = (abs(fragment_in.uv.x - eye_2[0]) < borderThickness || abs(fragment_in.uv.x - eye_2[1]) < borderThickness) && fragment_in.uv.y >= eye_2[2] && fragment_in.uv.y <= eye_2[3] ||
+                    (abs(fragment_in.uv.y - eye_2[2]) < borderThickness || abs(fragment_in.uv.y - eye_2[3]) < borderThickness) && fragment_in.uv.x >= eye_2[0] && fragment_in.uv.x <= eye_2[1];
+
+    bool isInMouth = (abs(fragment_in.uv.x - mouth[0]) < borderThickness || abs(fragment_in.uv.x - mouth[1]) < borderThickness) && fragment_in.uv.y >= mouth[2] && fragment_in.uv.y <= mouth[3] ||
+                     (abs(fragment_in.uv.y - mouth[2]) < borderThickness || abs(fragment_in.uv.y - mouth[3]) < borderThickness) && fragment_in.uv.x >= mouth[0] && fragment_in.uv.x <= mouth[1];
+
+    if (isInFace || isInEye1 || isInEye2 || isInMouth) {
+        // If inside any of the rectangles, return the color
         return color;
     } else {
         // Otherwise, return the texture color

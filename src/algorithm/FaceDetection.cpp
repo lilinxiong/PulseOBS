@@ -1,28 +1,49 @@
 #include "FaceDetection.h"
 
+#include <graphics/matrix4.h>
+#include <algorithm>
+
 // Static variables for face detection
-static cv::CascadeClassifier face_cascade;
+static cv::CascadeClassifier face_cascade, mouth_cascade, eye_cascade;
 static bool cascade_loaded = false;
+
+static void loadCascade(cv::CascadeClassifier &cascade, const char *module_name, const char *file_name)
+{
+	char *cascade_path = obs_find_module_file(obs_get_module(module_name), file_name);
+	if (!cascade_path) {
+		obs_log(LOG_INFO, "Error finding %s file!", file_name);
+		throw std::runtime_error("Error finding cascade file!");
+	}
+
+	if (!cascade.load(cascade_path)) {
+		obs_log(LOG_INFO, "Error loading %s!", file_name);
+		throw std::runtime_error("Error loading cascade!");
+	}
+
+	bfree(cascade_path);
+}
 
 // Ensure the face cascade is loaded once
 static void initializeFaceCascade()
 {
 	if (!cascade_loaded) {
-		char *cascade_path =
-			obs_find_module_file(obs_get_module("pulse-obs"), "haarcascade_frontalface_default.xml");
-		if (!cascade_path) {
-			obs_log(LOG_INFO, "Error finding face cascade file!");
-			throw std::runtime_error("Error finding face cascade file!");
-		}
-
-		if (!face_cascade.load(cascade_path)) {
-			obs_log(LOG_INFO, "Error loading face cascade!");
-			throw std::runtime_error("Error loading face cascade!");
-		}
-
-		bfree(cascade_path);
+		loadCascade(face_cascade, "pulse-obs", "haarcascade_frontalface_default.xml");
+		loadCascade(eye_cascade, "pulse-obs", "haarcascade_eye.xml");
+		loadCascade(mouth_cascade, "pulse-obs", "haarcascade_mcs_mouth.xml");
 		cascade_loaded = true;
 	}
+}
+
+static struct vec4 getNormalizedRect(const cv::Rect &region, uint32_t width, uint32_t height)
+{
+	float norm_min_x = static_cast<float>(region.x) / width;
+	float norm_max_x = static_cast<float>(region.x + region.width) / width;
+	float norm_min_y = static_cast<float>(region.y) / height;
+	float norm_max_y = static_cast<float>(region.y + region.height) / height;
+
+	struct vec4 rect;
+	vec4_set(&rect, norm_min_x, norm_max_x, norm_min_y, norm_max_y);
+	return rect;
 }
 
 // Function to detect faces and create a mask
@@ -57,6 +78,67 @@ std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *
 	std::vector<cv::Rect> faces;
 	face_cascade.detectMultiScale(bgr_frame, faces, 1.1, 10, 0, cv::Size(30, 30));
 
+	// Detect eyes and mouth within detected faces
+	for (size_t i = 0; i < faces.size(); i++) {
+		if (faces.size() < 1) {
+			obs_log(LOG_INFO, "No faces detected");
+			break;
+		}
+		face_coordinates.push_back(getNormalizedRect(faces[i], width, height));
+
+		// Define region of interest (ROI) for eyes and mouth
+		cv::Mat faceROI = bgr_frame(faces[i]);
+		cv::Mat gray_faceROI;
+		cv::cvtColor(faceROI, gray_faceROI, cv::COLOR_BGR2GRAY);
+
+		cv::Mat upperFaceROI =
+			gray_faceROI(cv::Rect(0, 0, gray_faceROI.cols, gray_faceROI.rows / 2)); // Upper half
+		cv::Mat lowerFaceROI = gray_faceROI(
+			cv::Rect(0, gray_faceROI.rows / 2, gray_faceROI.cols, faceROI.rows / 2)); // Lower half
+
+		// Detect eyes in the upper half of the face ROI
+		std::vector<cv::Rect> eyes;
+		eye_cascade.detectMultiScale(upperFaceROI, eyes, 1.1, 10, 0, cv::Size(15, 15));
+		// for (size_t j = 0; j < eyes.size(); j++) {
+		// 	cv::Rect eye = eyes[j];
+		// 	cv::Point eye_center(faces[i].x + eye.x + eye.width / 2, faces[i].y + eye.y + eye.height / 2);
+		// 	int radius = cvRound((eye.width + eye.height) * 0.25);
+		// 	cv::circle(img, eye_center, radius, cv::Scalar(0, 255, 0), 2);
+		// }
+
+		std::vector<vec4> eye_rects;
+		for (size_t i = 0; i < std::min(static_cast<size_t>(2), eyes.size()); i++) {
+			const auto &eye = eyes[i];
+			// Calculate absolute coordinates for the eye
+			cv::Rect absolute_eye(eye.x + faces[i].x, eye.y + faces[i].y, eye.width, eye.height);
+
+			// Push absolute eye bounding box as normalized coordinates
+			face_coordinates.push_back(getNormalizedRect(absolute_eye, width, height));
+		}
+
+		// Detect mouth in the lower half of the face ROI
+		std::vector<cv::Rect> mouths;
+		mouth_cascade.detectMultiScale(lowerFaceROI, mouths, 1.05, 25, 0, cv::Size(30, 15));
+		// for (size_t j = 0; j < mouths.size(); j++) {
+		// 	cv::Rect mouth = mouths[j];
+		// 	mouth.y += faceROI.rows / 2; // Adjust mouth position relative to the full face ROI
+		// 	cv::Point top_left(faces[i].x + mouth.x, faces[i].y + mouth.y);
+		// 	cv::Point bottom_right(faces[i].x + mouth.x + mouth.width, faces[i].y + mouth.y + mouth.height);
+		// 	cv::rectangle(img, top_left, bottom_right, cv::Scalar(0, 0, 255), 2);
+		// }
+
+		std::vector<vec4> mouth_rects;
+		for (size_t i = 0; i < std::min(static_cast<size_t>(1), mouths.size()); i++) {
+			const auto &mouth = mouths[i];
+			// Calculate absolute coordinates for the mouth
+			cv::Rect absolute_mouth(mouth.x + faces[i].x, mouth.y + faces[i].y + faceROI.rows / 2,
+						mouth.width, mouth.height);
+
+			// Push absolute mouth bounding box as normalized coordinates
+			face_coordinates.push_back(getNormalizedRect(absolute_mouth, width, height));
+		}
+	}
+
 	// Initialize a 2D boolean mask
 	std::vector<std::vector<bool>> face_mask(height, std::vector<bool>(width, false));
 
@@ -69,29 +151,6 @@ std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *
 			}
 		}
 	}
-
-	// Draw rectangles around detected faces
-	for (const auto &face : faces) {
-		float norm_min_x = static_cast<float>(face.x) / width;
-		float norm_max_x = static_cast<float>(face.x + face.width) / width;
-		float norm_min_y = static_cast<float>(face.y) / height;
-		float norm_max_y = static_cast<float>(face.y + face.height) / height;
-
-		struct vec4 rect;
-		vec4_set(&rect, norm_min_x, norm_max_x, norm_min_y, norm_max_y);
-		face_coordinates.push_back(rect);
-	}
-	// for (const auto &face : faces) {
-	//     obs_log(LOG_INFO, "FACE FACE FACE");
-	//     cv::rectangle(bgr_frame, face, cv::Scalar(0, 255, 0), 2);  // Green rectangle with thickness 2
-	// }
-
-	// // Convert BGR back to BGRA for OBS to display correctly
-	// cv::Mat processed_bgra;
-	// cv::cvtColor(bgr_frame, processed_bgra, cv::COLOR_BGR2BGRA);
-
-	// // Copy processed BGRA data back to the OBS frame buffer
-	// memcpy(data, processed_bgra.data, width * height * 4);
 
 	return face_mask;
 }
