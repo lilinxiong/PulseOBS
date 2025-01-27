@@ -26,7 +26,8 @@ static void initializeFaceCascade()
 }
 
 // Function to detect faces and create a mask
-std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *frame)
+std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *frame,
+							std::vector<struct vec4> &face_coordinates)
 {
 	if (!frame || !frame->data) {
 		throw std::runtime_error("Invalid BGRA frame data!");
@@ -61,12 +62,36 @@ std::vector<std::vector<bool>> detectFacesAndCreateMask(struct input_BGRA_data *
 
 	// Mark pixels within detected face regions as true
 	for (const auto &face : faces) {
+		obs_log(LOG_INFO, "FACE FACE FACE");
 		for (int y = face.y; y < face.y + face.height && y < static_cast<int>(height); ++y) {
 			for (int x = face.x; x < face.x + face.width && x < static_cast<int>(width); ++x) {
 				face_mask[y][x] = true;
 			}
 		}
 	}
+
+	// Draw rectangles around detected faces
+	for (const auto &face : faces) {
+		float norm_min_x = static_cast<float>(face.x) / width;
+		float norm_max_x = static_cast<float>(face.x + face.width) / width;
+		float norm_min_y = static_cast<float>(face.y) / height;
+		float norm_max_y = static_cast<float>(face.y + face.height) / height;
+
+		struct vec4 rect;
+		vec4_set(&rect, norm_min_x, norm_max_x, norm_min_y, norm_max_y);
+		face_coordinates.push_back(rect);
+	}
+	// for (const auto &face : faces) {
+	//     obs_log(LOG_INFO, "FACE FACE FACE");
+	//     cv::rectangle(bgr_frame, face, cv::Scalar(0, 255, 0), 2);  // Green rectangle with thickness 2
+	// }
+
+	// // Convert BGR back to BGRA for OBS to display correctly
+	// cv::Mat processed_bgra;
+	// cv::cvtColor(bgr_frame, processed_bgra, cv::COLOR_BGR2BGRA);
+
+	// // Copy processed BGRA data back to the OBS frame buffer
+	// memcpy(data, processed_bgra.data, width * height * 4);
 
 	return face_mask;
 }
