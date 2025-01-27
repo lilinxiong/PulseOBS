@@ -1,4 +1,4 @@
-autoload -Uz is-at-least log_group log_info log_error log_status read_codesign
+autoload -Uz is-at-least log_group log_info log_error log_status
 
 local macos_version=$(sw_vers -productVersion)
 
@@ -19,4 +19,8 @@ if (( ! ${+commands[brew]} )) {
 
 brew bundle --file ${SCRIPT_HOME}/.Brewfile
 rehash
+log_group
+
+log_group 'Installing and building opencv...'
+  python3 .github/build-opencv-macos.py
 log_group

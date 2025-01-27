@@ -1,0 +1,27 @@
+name: Push to Branch
+run-name: ${{ github.ref_name }} push run 🚀
+on:
+  push:
+    branches-ignore:
+      - main
+    tags:
+      - '*'
+permissions:
+  contents: write
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.ref }}'
+  cancel-in-progress: ${{ github.ref_type == 'tag' }}
+jobs:
+  check-format:
+    name: Check Formatting 🔍
+    uses: ./.github/workflows/check-format.yaml
+    permissions:
+      contents: read
+
+  build-project:
+    name: Build Project 🧱
+    uses: ./.github/workflows/build-project.yaml
+    secrets: inherit
+    permissions:
+      contents: read
+      
