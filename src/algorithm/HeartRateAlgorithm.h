@@ -19,13 +19,13 @@ class MovingAvg {
 private:
 	int windowSize;
 	int windowStride;
+	int maxNumWindows;
 
-	std::vector<std::vector<double_t>> windows;
+	std::vector<std::vector<std::vector<double_t>>> windows;
 
-	std::vector<double_t> average_keyed(std::vector<std::vector<std::tuple<double, double, double>>> rgb,
-					    std::vector<std::vector<bool>> skinkey = {});
+	std::vector<double_t> averageRGB(std::vector<std::vector<std::vector<uint8_t>>> rgb);
 
-	void updateWindows(double_t frame_avg);
+	void updateWindows(std::vector<double_t> frame_avg);
 
 public:
 	double calculateHeartRate(struct input_BGRA_data *BGRA_data, int preFilter = 0, int ppg = 0,
