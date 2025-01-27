@@ -35,8 +35,53 @@ vector<double_t> MovingAvg::average_keyed(std::vector<std::vector<std::tuple<dou
 	}
 }
 
-double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
+vector<double_t> green(vector<vector<double_t>> framesRGB)
+{
+	vector<double_t> framesG;
+
+	for (int i = 0; i < static_cast<int>(framesRGB.size()); i++) {
+		framesG.push_back(framesRGB[i][1]);
+	}
+
+	return framesG;
+}
+
+void MovingAvg::updateWindows(double_t frame_avg)
+{
+	if (windows.empty()) {
+		windows.push_back({frame_avg});
+		return;
+	}
+
+	vector<double_t> last = windows.back();
+
+	if (windows.back().size() == windowSize) {
+		vector<double_t> window = vector<double_t>(last.end() - windowStride, last.end());
+		window.push_back(frame_avg);
+		windows.push_back(window);
+	} else {
+		windows.pop_back();
+		last.push_back(frame_avg);
+		windows.push_back(last);
+	}
+}
+
+double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, int preFilter, int ppg, int postFilter)
 { // Assume frame in YUV format: struct obs_source_frame *source
 	UNUSED_PARAMETER(BGRA_data);
+	UNUSED_PARAMETER(preFilter);
+	UNUSED_PARAMETER(postFilter);
+
+	vector<vector<double_t>> framesRGB;
+	vector<double_t> ppgSignal;
+
+	switch (ppg) {
+	case 0:
+		ppgSignal = green(framesRGB);
+
+	default:
+		break;
+	}
+
 	return 0.0;
 }
