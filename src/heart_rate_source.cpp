@@ -328,7 +328,7 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 }
 
 static gs_texture_t *draw_rectangle(struct heart_rate_source *hrs, uint32_t width, uint32_t height,
-				     std::vector<struct vec4> &face_coordinates)
+				    std::vector<struct vec4> &face_coordinates)
 {
 
 	gs_texture_t *blurredTexture = gs_texture_create(width, height, GS_BGRA, 1, nullptr, 0);
