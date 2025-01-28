@@ -36,7 +36,8 @@ static void initializeFaceCascade()
 }
 
 // Mark pixels within detected regions as true/false depending on whether its the face/eyes/mouth
-static void mask_face(std::vector<std::vector<bool>> face_mask, cv::Rect rect, bool is_face) {
+static void mask_face(std::vector<std::vector<bool>> face_mask, cv::Rect rect, bool is_face)
+{
 	for (int y = rect.y; y < rect.y + rect.height; ++y) {
 		for (int x = rect.x; x < rect.x + rect.width; ++x) {
 			face_mask[y][x] = is_face;
@@ -44,7 +45,7 @@ static void mask_face(std::vector<std::vector<bool>> face_mask, cv::Rect rect, b
 	}
 }
 
-// Normalise the rectangle coordinates to pass to the effect files for drawing boxes 
+// Normalise the rectangle coordinates to pass to the effect files for drawing boxes
 static struct vec4 getNormalisedRect(const cv::Rect &region, uint32_t width, uint32_t height)
 {
 	float norm_min_x = static_cast<float>(region.x) / width;
