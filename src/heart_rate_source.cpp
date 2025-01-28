@@ -81,7 +81,7 @@ static void create_obs_heart_display_source_if_needed()
 		obs_data_set_obj(source_settings, "font", font_data);
 		obs_data_release(font_data);
 
-		std::string heartRateText = "Heart Rate: 0 BPM";
+		std::string heartRateText = "Heart Rate: -1 BPM";
 		obs_data_set_string(source_settings, "text", heartRateText.c_str());
 		obs_source_update(source, source_settings);
 		obs_data_release(source_settings);
@@ -178,17 +178,6 @@ void heart_rate_source_tick(void *data, float seconds)
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
-}
-
-static std::string processBGRAData(struct input_BGRA_data *BGRA_data)
-{
-	double heart_rate = avg.calculateHeartRate(BGRA_data);
-	std::string log = "Heart Rate: " + std::to_string(heart_rate);
-	obs_log(LOG_INFO, log.c_str());
-	return log;
-
-	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
-	// number multiple times (shouldn't affect plugin)
 }
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
@@ -333,14 +322,17 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	std::string result = processBGRAData(hrs->BGRA_data);
+	double heart_rate = avg.calculateHeartRate(hrs->BGRA_data);
 
-	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
-	obs_data_t *source_settings = obs_source_get_settings(source);
-	obs_data_set_string(source_settings, "text", result.c_str());
-	obs_source_update(source, source_settings);
-	obs_data_release(source_settings);
-	obs_source_release(source);
+	if (heart_rate != NULL) {
+		std::string result = "Heart Rate: " + std::to_string(heart_rate);
+		obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
+		obs_data_t *source_settings = obs_source_get_settings(source);
+		obs_data_set_string(source_settings, "text", result.c_str());
+		obs_source_update(source, source_settings);
+		obs_data_release(source_settings);
+		obs_source_release(source);
+	}
 
 	obs_source_skip_video_filter(hrs->source);
 }
