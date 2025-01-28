@@ -194,7 +194,7 @@ double MovingAvg::Welch_cpu_heart_rate(const std::vector<std::vector<double>> &b
 	return dominant_frequency;
 }
 
-double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
+double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates)
 { // Assume frame in YUV format: struct obs_source_frame *source
 	uint8_t *data = BGRA_data->data;
 	uint32_t width = BGRA_data->width;
@@ -217,7 +217,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data)
 	}
 
 	// uncomment this when face detect fixed and add to next line as param
-	std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+	std::vector<std::vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data, face_coordinates);
 	vector<double_t> averageRGBValues = average_keyed(rgb, skinKey);
 
 	frame_data.push_back(averageRGBValues);

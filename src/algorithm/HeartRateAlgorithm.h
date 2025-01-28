@@ -34,7 +34,7 @@ private:
 	double Welch_cpu_heart_rate(const std::vector<std::vector<double>> &bvps, int num_data_points);
 
 public:
-	double calculateHeartRate(struct input_BGRA_data *BGRA_data);
+	double calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates);
 };
 
 #endif
