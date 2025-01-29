@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -197,9 +198,20 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, int preF
 	UNUSED_PARAMETER(postFilter);
 
 	FrameRGB frameRGB = extractRGB(BGRA_data);
-	vector<vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
-	vector<double_t> avg = averageRGB(frameRGB, skinKey);
-	updateWindows(avg);
+	if (windows.empty() || windows.back().size() % 10 == 0 || !detectFace) {
+		vector<vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+		vector<double_t> avg = averageRGB(frameRGB, skinKey);
+		if (isnan(avg[0]) || isnan(avg[1]) || isnan(avg[2])) {
+			detectFace = false;
+		} else {
+			detectFace = true;
+			latestSkinKey = skinKey;
+			updateWindows(avg);
+		}
+	} else {
+		vector<double_t> avg = averageRGB(frameRGB, latestSkinKey);
+		updateWindows(avg);
+	}
 
 	vector<double_t> ppgSignal;
 

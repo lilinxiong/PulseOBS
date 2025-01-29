@@ -24,6 +24,9 @@ private:
 
 	std::vector<std::vector<std::vector<double_t>>> windows;
 
+	std::vector<std::vector<bool>> latestSkinKey;
+	bool detectFace = false;
+
 	std::vector<double_t> averageRGB(std::vector<std::vector<std::vector<uint8_t>>> rgb,
 					 std::vector<std::vector<bool>> skinKey = {});
 
