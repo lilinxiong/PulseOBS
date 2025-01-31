@@ -111,10 +111,6 @@ double MovingAvg::welch(vector<double_t> bvps)
 	double frequency_resolution = (fps * 60.0) / num_frames;
 	int nyquist_limit = segment_size / 2;
 
-	for (int i = 0; i < num_frames; i++) {
-		obs_log(LOG_INFO, "frames[i]: %lf", bvps[i]);
-	}
-
 	// Hann window
 	ArrayXd hann_window(segment_size);
 	for (int i = 0; i < segment_size; ++i) {
@@ -160,14 +156,24 @@ double MovingAvg::welch(vector<double_t> bvps)
 	// Adjust Nyquist limit for human heart rates
 	int nyquist_limit_bpm = min(nyquist_limit, static_cast<int>(200 / frequency_resolution));
 
+	double lower_limit = 50;
+	for (int k = 0; k <= nyquist_limit_bpm; ++k) {
+		if (k * frequency_resolution < lower_limit) {
+			psd[k] = 0;
+		}
+	}
+
 	// Log power spectrum to OBS console in BPM
 	std::ostringstream log_stream;
 	for (int k = 0; k <= nyquist_limit_bpm; ++k) {
-		double bpm = k * frequency_resolution;
-		log_stream << bpm << " BPM: " << psd[k];
-		if (k < nyquist_limit_bpm) {
-			log_stream << ", ";
+		if (psd[k] > 0) {
+			double bpm = k * frequency_resolution;
+			log_stream << bpm << " BPM: " << psd[k];
+			if (k < nyquist_limit_bpm) {
+				log_stream << ", ";
+			}
 		}
+		
 	}
 	obs_log(LOG_INFO, "%s", log_stream.str().c_str());
 
@@ -202,10 +208,8 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vec
 		vector<vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data, face_coordinates);
 		vector<double_t> avg = averageRGB(frameRGB, skinKey);
 		if (avg[0] == 0 && avg[1] == 0 && avg[2] == 0) {
-			obs_log(LOG_INFO, "FACE NOT DETECTED :(");
 			detectFace = false;
 		} else {
-			obs_log(LOG_INFO, "FACE DETECTED :)");
 			detectFace = true;
 			latestSkinKey = skinKey;
 			updateWindows(avg);
