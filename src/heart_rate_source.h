@@ -26,6 +26,7 @@ struct heart_rate_source {
 	obs_source_t *source;
 	gs_texrender_t *texrender;
 	gs_stagesurf_t *stagesurface;
+	gs_effect_t *testing;
 #ifdef __cplusplus
 	input_BGRA_data *BGRA_data;
 	std::mutex BGRA_data_mutex;

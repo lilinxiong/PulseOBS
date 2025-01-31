@@ -192,18 +192,20 @@ Window concatWindows(Windows windows)
 	return concatenatedWindow;
 }
 
-double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, int preFilter, int ppg, int postFilter)
+double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates, int preFilter, int ppg, int postFilter)
 { // Assume frame in YUV format: struct obs_source_frame *source
 	UNUSED_PARAMETER(preFilter);
 	UNUSED_PARAMETER(postFilter);
 
 	FrameRGB frameRGB = extractRGB(BGRA_data);
 	if (windows.empty() || windows.back().size() % 10 == 0 || !detectFace) {
-		vector<vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data);
+		vector<vector<bool>> skinKey = detectFacesAndCreateMask(BGRA_data, face_coordinates);
 		vector<double_t> avg = averageRGB(frameRGB, skinKey);
-		if (isnan(avg[0]) || isnan(avg[1]) || isnan(avg[2])) {
+		if (avg[0] == 0 && avg[1] == 0 && avg[2] == 0) {
+			obs_log(LOG_INFO, "FACE NOT DETECTED :(");
 			detectFace = false;
 		} else {
+			obs_log(LOG_INFO, "FACE DETECTED :)");
 			detectFace = true;
 			latestSkinKey = skinKey;
 			updateWindows(avg);
@@ -215,7 +217,7 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, int preF
 
 	vector<double_t> ppgSignal;
 
-	if (static_cast<int>(windows.back().size()) == windowSize) {
+	if (!windows.empty() && static_cast<int>(windows.back().size()) == windowSize) {
 		Window currentWindow = concatWindows(windows);
 		switch (ppg) {
 		case 0:

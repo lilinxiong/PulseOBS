@@ -6,6 +6,7 @@
 #include <obs-source.h>
 #include <obs-data.h>
 #include <graphics/graphics.h>
+#include <graphics/matrix4.h>
 #include <util/platform.h>
 #include <vector>
 #include <sstream>
@@ -118,6 +119,20 @@ void *heart_rate_source_create(obs_data_t *settings, obs_source_t *source)
 	struct heart_rate_source *hrs = new (data) heart_rate_source();
 
 	hrs->source = source;
+
+	char *effect_file;
+	obs_enter_graphics();
+	effect_file = obs_module_file("test.effect");
+
+	hrs->testing = gs_effect_create_from_file(effect_file, NULL);
+
+	bfree(effect_file);
+	if (!hrs->testing) {
+		heart_rate_source_destroy(hrs);
+		hrs = NULL;
+	}
+	obs_leave_graphics();
+
 	hrs->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
 	create_obs_heart_display_source_if_needed();
 
@@ -136,6 +151,7 @@ void heart_rate_source_destroy(void *data)
 		if (hrs->stagesurface) {
 			gs_stagesurface_destroy(hrs->stagesurface);
 		}
+		gs_effect_destroy(hrs->testing);
 		obs_leave_graphics();
 		hrs->~heart_rate_source();
 		bfree(hrs);
@@ -178,6 +194,17 @@ void heart_rate_source_tick(void *data, float seconds)
 	if (!obs_source_enabled(hrs->source)) {
 		return;
 	}
+}
+
+static std::string processBGRAData(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates)
+{
+	double heart_rate = avg.calculateHeartRate(BGRA_data, face_coordinates);
+	std::string log = "Heart Rate: " + std::to_string(heart_rate);
+	obs_log(LOG_INFO, log.c_str());
+	return log;
+
+	// CalculateHeartRate only updates the heart rate every n secs, so may return the same
+	// number multiple times (shouldn't affect plugin)
 }
 
 static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
@@ -301,6 +328,40 @@ static bool getBGRAFromStageSurface(struct heart_rate_source *hrs)
 	return true;
 }
 
+static gs_texture_t *draw_rectangle(struct heart_rate_source *hrs, uint32_t width, uint32_t height,
+				    std::vector<struct vec4> &face_coordinates)
+{
+
+	gs_texture_t *blurredTexture = gs_texture_create(width, height, GS_BGRA, 1, nullptr, 0);
+	gs_copy_texture(blurredTexture, gs_texrender_get_texture(hrs->texrender));
+
+	gs_texrender_reset(hrs->texrender);
+	if (!gs_texrender_begin(hrs->texrender, width, height)) {
+		obs_log(LOG_INFO, "Could not open background blur texrender!");
+		return blurredTexture;
+	}
+
+	gs_effect_set_texture(gs_effect_get_param_by_name(hrs->testing, "image"), blurredTexture);
+
+	std::vector<std::string> params = {"face", "eye_1", "eye_2", "mouth"};
+
+	for (int i = 0; i < std::min(4, static_cast<int>(face_coordinates.size())); i++) {
+		gs_effect_set_vec4(gs_effect_get_param_by_name(hrs->testing, params[i].c_str()), &face_coordinates[i]);
+	}
+
+	struct vec4 background;
+	vec4_zero(&background);
+	gs_clear(GS_CLEAR_COLOR, &background, 0.0f, 0);
+	gs_ortho(0.0f, static_cast<float>(width), 0.0f, static_cast<float>(height), -100.0f, 100.0f);
+	gs_blend_state_push();
+	gs_blend_function(GS_BLEND_SRCALPHA, GS_BLEND_INVSRCALPHA);
+
+	gs_blend_state_pop();
+	gs_texrender_end(hrs->texrender);
+	gs_copy_texture(blurredTexture, gs_texrender_get_texture(hrs->texrender));
+	return blurredTexture;
+}
+
 // Render function
 void heart_rate_source_render(void *data, gs_effect_t *effect)
 {
@@ -322,17 +383,45 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 		return;
 	}
 
-	double heart_rate = avg.calculateHeartRate(hrs->BGRA_data);
+	if (!hrs->testing) {
+		obs_log(LOG_INFO, "Effect not loaded");
+		// Effect failed to load, skip rendering
+		obs_source_skip_video_filter(hrs->source);
+		return;
+	}
+	std::vector<struct vec4> face_coordinates;
+	std::string result = processBGRAData(hrs->BGRA_data, face_coordinates);
 
-	if (heart_rate != NULL) {
-		std::string result = "Heart Rate: " + std::to_string(heart_rate);
-		obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
-		obs_data_t *source_settings = obs_source_get_settings(source);
-		obs_data_set_string(source_settings, "text", result.c_str());
-		obs_source_update(source, source_settings);
-		obs_data_release(source_settings);
-		obs_source_release(source);
+	gs_texture_t *testingTexture =
+		draw_rectangle(hrs, hrs->BGRA_data->width, hrs->BGRA_data->height, face_coordinates);
+
+	if (!obs_source_process_filter_begin(hrs->source, GS_BGRA, OBS_ALLOW_DIRECT_RENDERING)) {
+		obs_source_skip_video_filter(hrs->source);
+		gs_texture_destroy(testingTexture);
+		return;
 	}
 
-	obs_source_skip_video_filter(hrs->source);
+	gs_effect_set_texture(gs_effect_get_param_by_name(hrs->testing, "image"), testingTexture);
+
+	struct vec4 color;
+	vec4_set(&color, 1.0f, 0.0f, 0.0f, 1.0f);
+	gs_effect_set_vec4(gs_effect_get_param_by_name(hrs->testing, "color"),
+			   &color); // Set red color
+
+	gs_blend_state_push();
+	gs_reset_blend_state();
+
+	obs_source_process_filter_tech_end(hrs->source, hrs->testing, hrs->BGRA_data->width, hrs->BGRA_data->height,
+					   "Draw");
+
+	gs_blend_state_pop();
+
+	obs_source_t *source = obs_get_source_by_name(TEXT_SOURCE_NAME);
+	obs_data_t *source_settings = obs_source_get_settings(source);
+	obs_data_set_string(source_settings, "text", result.c_str());
+	obs_source_update(source, source_settings);
+	obs_data_release(source_settings);
+	obs_source_release(source);
+
+	gs_texture_destroy(testingTexture);
 }
