@@ -36,7 +36,7 @@ static void initializeFaceCascade()
 }
 
 // Mark pixels within detected regions as true/false depending on whether its the face/eyes/mouth
-static void mask_face(std::vector<std::vector<bool>>& face_mask, cv::Rect rect, bool is_face)
+static void mask_face(std::vector<std::vector<bool>> &face_mask, cv::Rect rect, bool is_face)
 {
 	for (int y = rect.y; y < rect.y + rect.height; ++y) {
 		for (int x = rect.x; x < rect.x + rect.width; ++x) {

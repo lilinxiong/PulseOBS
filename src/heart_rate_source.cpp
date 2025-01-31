@@ -380,7 +380,7 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 	}
 	std::vector<struct vec4> face_coordinates;
 	double heart_rate = avg.calculateHeartRate(hrs->BGRA_data, face_coordinates);
-	std::string result = "Heart Rate: " + std::to_string((int) heart_rate);
+	std::string result = "Heart Rate: " + std::to_string((int)heart_rate);
 
 	gs_texture_t *testingTexture =
 		draw_rectangle(hrs, hrs->BGRA_data->width, hrs->BGRA_data->height, face_coordinates);
@@ -414,7 +414,6 @@ void heart_rate_source_render(void *data, gs_effect_t *effect)
 		obs_data_release(source_settings);
 		obs_source_release(source);
 	}
-	
 
 	gs_texture_destroy(testingTexture);
 }

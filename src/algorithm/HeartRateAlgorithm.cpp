@@ -173,7 +173,6 @@ double MovingAvg::welch(vector<double_t> bvps)
 				log_stream << ", ";
 			}
 		}
-		
 	}
 	obs_log(LOG_INFO, "%s", log_stream.str().c_str());
 
@@ -198,7 +197,8 @@ Window concatWindows(Windows windows)
 	return concatenatedWindow;
 }
 
-double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates, int preFilter, int ppg, int postFilter)
+double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vector<struct vec4> &face_coordinates,
+				     int preFilter, int ppg, int postFilter)
 { // Assume frame in YUV format: struct obs_source_frame *source
 	UNUSED_PARAMETER(preFilter);
 	UNUSED_PARAMETER(postFilter);
@@ -226,13 +226,13 @@ double MovingAvg::calculateHeartRate(struct input_BGRA_data *BGRA_data, std::vec
 		switch (ppg) {
 		case 0:
 			ppgSignal = green(currentWindow);
-
+			break;
 		default:
 			break;
 		}
 
 		return welch(ppgSignal);
 	} else {
-		return NULL;
+		return 0.0;
 	}
 }
