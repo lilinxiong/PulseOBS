@@ -52,7 +52,7 @@ if(UNIX)
   message("Configuring OpenCV for MacOS and Linux")
   set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/binary/opencv-4.11.0-macos/lib/cmake/opencv4)
 elseif(WIN32)
-  set(OpenCV_STATIC ON)
+  set(OpenCV_STATIC OFF)
   set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/binary/opencv-4.11.0-windows/)
 endif()
 
